@@ -1,0 +1,65 @@
+/* ─────────── basic reset & fonts ─────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.55;
+  color: #262626;
+  background: linear-gradient(135deg, #fdfdfd 0%, #f5f7fb 60%);
+  padding: 2rem 1rem 4rem;
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+/* ─────────── headings ─────────── */
+h1 { font-size: 3rem; letter-spacing: -.02em; margin-bottom: .25em; }
+.subtitle { font-size: 1.15rem; margin-bottom: 1.75rem; color: #555; }
+h2 { font-size: 1.75rem; margin: 2.25rem 0 .75rem; border-bottom: 2px solid #ddd; padding-bottom: .4rem;}
+h3 { font-size: 1.25rem; margin: 1.5rem 0 .6rem; }
+
+/* ─────────── tables ─────────── */
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+th, td { padding: .45rem .6rem; }
+th { text-align: left; background: #f0f3fa; }
+tr:nth-child(even) td { background: #fafbfe; }
+.compact td { font-size: .92rem; }
+.hero-table td, .suit-table td { vertical-align: top; }
+
+/* ─────────── suit styling ─────────── */
+:root {
+  --club:   #007030;
+  --diamond:#c73636;
+  --heart:  #d81b60;
+  --spade:  #000000;
+}
+.suit      { font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif; font-weight: 600; }
+.suit.club { color: var(--club); }
+.suit.diamond { color: var(--diamond); }
+.suit.heart   { color: var(--heart);   }
+.suit.spade   { color: var(--spade);   }
+.big { font-size: 1.5rem; line-height: 1; }
+
+/* ─────────── figure for stack demo ─────────── */
+.stack-demo { max-width: 10rem; margin: 1rem 0; }
+.stack-demo figcaption { font-size: .85rem; margin-bottom: .3rem; color: #444; }
+.stack-demo pre {
+  background: #f8f9fc;
+  border: 1px solid #e5e8f3;
+  padding: .7rem .9rem;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: .9rem;
+}
+
+/* ─────────── callouts & notes ─────────── */
+.note  { font-size: .85rem; margin-top: .5rem; color: #555; }
+.notation { margin-top: 1rem; }
+.face-strike { margin: 1.2rem 0; font-style: italic; }
+
+/* ─────────── lists ─────────── */
+ol { margin-left: 1.4rem; }
+ol.alpha { list-style-type: lower-alpha; }
+ul { margin-left: 1.2rem; }
+li + li { margin-top: .4rem; }
+
+/* ─────────── footer ─────────── */
+footer { margin-top: 3rem; font-size: .8rem; text-align: center; color: #777; }

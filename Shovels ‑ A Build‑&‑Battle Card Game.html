@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- saved from url=(0027)https://jonpot.com/shovels/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
+  
+  <title>Shovels ‑ A Build‑&amp;‑Battle Card Game</title>
+
+  <!-- Link to the style sheet -->
+  <link rel="stylesheet" href="./Shovels ‑ A Build‑&amp;‑Battle Card Game_files/shovels.css">
+<link type="text/css" rel="stylesheet" id="dark-mode-custom-link"><link type="text/css" rel="stylesheet" id="dark-mode-general-link"><style lang="en" type="text/css" id="dark-mode-custom-style"></style><style lang="en" type="text/css" id="dark-mode-native-style"></style><style lang="en" type="text/css" id="dark-mode-native-sheet"></style></head>
+
+<body>
+  <header>
+    <h1>Shovels</h1>
+    <p class="subtitle">A build‑and‑battle card game for <strong>2–4 players</strong> (add decks for more).</p>
+  </header>
+
+  <!-- ───────────────────────── Components ───────────────────────── -->
+  <section id="components">
+    <h2>1. Components</h2>
+    <table class="compact">
+      <thead><tr><th>Item</th><th>Qty</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Standard 52‑card decks</td><td>2</td><td>Matching backs. +1 deck / 2 extra players.</td></tr>
+        <tr><td>Player screens (optional)</td><td>Up&nbsp;to&nbsp;4</td><td>Hide work‑in‑progress stacks.</td></tr>
+        <tr><td>Start‑player token</td><td>1</td><td>Any small marker (optional for thise with sufficiently good memory).</td></tr>
+      </tbody>
+    </table>
+
+    <p class="notation"><strong>Ranks:</strong>&nbsp;2 – 10 as printed, <strong>Ace&nbsp;=&nbsp;10</strong>.<br>
+       <strong>Suits:</strong> <span class="suit club">♣</span>&nbsp;Clubs • <span class="suit diamond">♦</span>&nbsp;Diamonds • <span class="suit heart">♥</span>&nbsp;Hearts • <span class="suit spade">♠</span>&nbsp;Spades.</p>
+  </section>
+
+  <!-- ───────────────────────── Goal ───────────────────────── -->
+  <section id="goal">
+    <h2>2. Goal</h2>
+    <p>Be the <em>last</em> player with at least one living character on the table.</p>
+  </section>
+
+  <!-- ───────────────────────── Setup ───────────────────────── -->
+  <section id="setup">
+    <h2>3. Setup</h2>
+    <ol>
+      <li><strong>Build the main deck.</strong>
+        <ol class="alpha">
+          <li>Combine both 52‑card decks (104 cards).</li>
+          <li>Pull out <strong>all Jacks, Queens, Kings</strong> (24 cards).
+            <ul>
+              <li>Shuffle them; deal <strong>3 face‑down</strong> to each player (these are your characters).</li>
+              <li>Return the rest to the main deck, then shuffle thoroughly.</li>
+            </ul>
+          </li>
+        </ol>
+      </li>
+
+      <li><strong>Create the Shop pile.</strong> Deal <strong>20 face‑down</strong> cards; set aside for Phase&nbsp;2.</li>
+
+      <li><strong>Central deck &amp; discard.</strong> Put the remaining deck within reach, leaving space beside it for a face‑up discard stack.</li>
+
+      <li><strong>Choose the start player</strong> (last winner, or last person who used a real shovel). Give them the token.</li>
+    </ol>
+  </section>
+
+  <!-- ───────────────────────── Phase 1 ───────────────────────── -->
+  <section id="phase1">
+    <h2>4. Phase 1 — Character&nbsp;Creation</h2>
+    <p>Each face card is a <em>character</em>. Build three vertical stacks in your hand or behind the divider:</p>
+
+    <figure class="stack-demo">
+      <figcaption>Example Stack</figcaption>
+      <pre>  9♠  ← newest card (top)
+  5♥
+  3♣
+  Q♦  ← face card (bottom)
+      </pre>
+    </figure>
+
+    <p class="note">Stacks are <strong>fully visible</strong> in later phases; fan them downward or sideways so every card is readable.</p>
+
+    <h3>Turn sequence&nbsp;— clockwise</h3>
+    <ol>
+      <li><strong>Draw exactly two</strong> new cards:
+        <ul>
+          <li><em>EITHER</em> both from the face‑down deck</li>
+          <li><em>OR</em> one or two from the <em>top</em> of the discard pile, then from the deck until you hold two.</li>
+        </ul>
+      </li>
+
+      <li><strong>Discard one</strong> of those two to the face‑up pile.</li>
+
+      <li><strong>Play the other</strong>:
+        <ul>
+          <li><strong>Number card</strong> → place it on <em>top</em> of any character stack you own.</li>
+          <li><strong>Face card</strong> → replace a face on one of your stacks (old face is discarded). The rest of that stack is untouched. You may instead discard the new face if you wish.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p>Repeat until the deck is empty. Continue turn order (discard‑pile draws only) until everyone has taken the same number of turns. Reveal any hidden stacks; proceed to battle!</p>
+  </section>
+
+  <!-- ───────────────────────── Phase 2 ───────────────────────── -->
+  <section id="phase2">
+    <h2>5. Phase 2 — Battle</h2>
+
+    <h3>5.1 Prepare the Shop</h3>
+    <ol>
+      <li>Shuffle the discard pile with the 20‑card Shop pile; place face‑down.</li>
+      <li>Flip <strong>three</strong> cards face‑up beside it — this is the <em>Shop&nbsp;row</em>.</li>
+    </ol>
+
+    <h3>5.2 Determine the first active player</h3>
+    <p>Whoever shows the highest‑rank <span class="suit spade">♠</span> in any stack starts (Ace&nbsp;&gt;&nbsp;10&nbsp;&gt;&nbsp;9 … 2). Ignore face cards. Break ties by the next‑lower Spade; if still tied, keep the original token holder.</p>
+
+    <h3>5.3 Your Turn (overview)</h3>
+    <ol>
+      <li><strong>Choose a living, untapped character</strong>.</li>
+      <li><strong>EITHER</strong> form an <em>action hand</em> (<a href="https://jonpot.com/shovels/#action">see 5.4</a>), <strong>OR</strong> tap its hero power (<a href="https://jonpot.com/shovels/#hero">see&nbsp;7</a>).</li>
+      <li>End of turn: refill empty Shop slots so three face‑up cards are ready for the next player.</li>
+    </ol>
+
+    <!-- ───────────────────────── Action Hand ───────────────────────── -->
+    <section id="action">
+      <h3>5.4 Action Hand (discarding)</h3>
+      <ol>
+        <li><strong>Lift one or more</strong> cards from the <em>top</em> of that stack; these are “in hand.”</li>
+        <li><strong>Pick a suit</strong> present in your held cards.</li>
+        <li><strong>Add their ranks</strong> (Ace&nbsp;=&nbsp;10) and resolve the matching effect:</li>
+      </ol>
+
+      <table class="suit-table">
+        <thead><tr><th>Suit</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="suit club big">♣</span>&nbsp;Clubs<br><em>Attack</em></td>
+            <td>Deal that much damage to any character. Compare vs the target’s <strong>topmost&nbsp;Heart</strong>. If damage&nbsp;≥&nbsp;its rank, discard that Heart <em>and every card above it</em>. A character with no Hearts dies to any positive damage (discard full stack).</td>
+          </tr>
+          <tr>
+            <td><span class="suit diamond big">♦</span>&nbsp;Diamonds<br><em>Coins</em></td>
+            <td>Gain that many coins then shop (<a href="https://jonpot.com/shovels/#shop">§ 6</a>). Coins do <em>not</em> carry over.</td>
+          </tr>
+          <tr>
+            <td><span class="suit heart big">♥</span>&nbsp;Hearts<br><em>Stall</em></td>
+            <td>No extra effect — sometimes you just burn time or expose better cards.</td>
+          </tr>
+          <tr>
+            <td><span class="suit spade big">♠</span>&nbsp;Spades<br><em>Shovel</em></td>
+            <td>Dig that many cards deep, extract any subset to form a <em>new</em> action hand immediately (you may chain digs).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="face-strike"><strong>Free face‑strike:</strong> On your turn, a face card may launch a <em>1‑damage</em> attack <u>without tapping or discarding</u> — but only if that face card has NO cards on top of it (or if you used a shovel to "dig down" to the face card) AND if that damage would kill (remove) at least one opposing card(or force an opposing card to tap to stay alive). This counts as “removing a card from the table” for the Must‑Act rule.</p>
+    </section>
+
+  </section>
+
+  <!-- ───────────────────────── Shop ───────────────────────── -->
+  <section id="shop">
+    <h2>6. Shopping</h2>
+    <p>You may enter the shop during a Diamonds action <em>or</em> via certain hero powers.</p>
+
+    <h3>6.1 Prices</h3>
+    <ul>
+      <li>Number card&nbsp;= its rank (Ace&nbsp;10).</li>
+      <li>Face cards — Jack 3 • Queen 4 • King 5.</li>
+    </ul>
+
+    <h3>6.2 Buying &amp; placing</h3>
+    <ul>
+      <li>Pay coins, take card, place immediately on <em>top</em> of any living character you own.</li>
+      <li>Upgrading royalty must rise in rank (J → Q/K, Q → K). To create a brand‑new stack (max 3) you must start with a Jack.</li>
+    </ul>
+
+    <h3>6.3 Refreshing the row</h3>
+    <ul>
+      <li>During your shop visit you may pay <strong>2 coins</strong> once or multiple times to wipe the row, discarding any remaining cards and flipping three replacements.</li>
+      <li><strong>End‑of‑turn auto‑refill:</strong> After you finish shopping, immediately fill empty slots so the next player always starts with three face‑up options.</li>
+    </ul>
+  </section>
+
+  <!-- ───────────────────────── Hero Powers ───────────────────────── -->
+  <section id="hero">
+    <h2>7. Hero Powers&nbsp;— “Tap&nbsp;Once&nbsp;per Life”</h2>
+    <p>Tapping a face counts as your whole turn (no discard). A face may tap <em>once per current life</em>; replacing that face card resets it.</p>
+
+    <table class="hero-table">
+      <thead><tr><th>Suit</th><th>Jack</th><th>Queen</th><th>King</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="suit club big">♣</span><br>Burst&nbsp;Attack</td>
+          <td>One&nbsp;10‑dmg hit</td>
+          <td>Two&nbsp;10‑dmg hits<br>(different targets)</td>
+          <td>Three&nbsp;10‑dmg hits<br>(all different)</td>
+        </tr>
+        <tr>
+          <td><span class="suit diamond big">♦</span><br>Free&nbsp;Purchase</td>
+          <td>Take 1 card<br>(row or top draw)</td>
+          <td>Take 2 cards</td>
+          <td>Take 3 cards</td>
+        </tr>
+        <tr>
+          <td><span class="suit spade big">♠</span><br>Gravedig</td>
+          <td>Draw 5 from discard, keep 1</td>
+          <td>Keep 2</td>
+          <td>Keep 3</td>
+        </tr>
+        <tr>
+          <td><span class="suit heart big">♥</span><br>Reaction&nbsp;Shield*</td>
+          <td>+3&nbsp;defence</td>
+          <td>+5&nbsp;defence</td>
+          <td>+10&nbsp;defence</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">*Hearts powers may tap out‑of‑turn when that <em>same</em> character is attacked, after damage is declared but before the shield comparison is made. Only one reaction may apply to a given attack. If tapped on your turn, these have no effect, but do allow you to pass your turn if you do not wish to take other actions.</p>
+  </section>
+
+  <!-- ───────────────────────── Fatigue ───────────────────────── -->
+  <section id="fatigue">
+    <h2>8. Must‑Act &amp; Fatigue</h2>
+    <p>Every turn you must either:</p>
+    <ul>
+      <li>Discard at least one card from a stack (forming an action hand, even if that hand doesn't produce any meaningful effects), <em>or</em></li>
+      <li>Tap a hero power, <em>or</em></li>
+      <li>Use a free 1‑damage face‑strike that successfully kills a card.</li>
+    </ul>
+    <p>If no legal option exists, discard one of your own face cards — that character dies.</p>
+  </section>
+
+  <!-- ───────────────────────── End Game ───────────────────────── -->
+  <section id="end">
+    <h2>9. End of the Game</h2>
+    <p>When a single player is the only one with living characters, they win. Shuffle everything and go again!</p>
+  </section>
+
+  <!-- ───────────────────────── Variants ───────────────────────── -->
+  <section id="variants">
+    <h2>10. Variants</h2>
+    <ul>
+      <li><strong>Mass Armies.</strong> New face cards create additional characters instead of replacing. Great chaos for 5+ player games.</li>
+      <li><strong>Bigger Tables.</strong> Add one full 52‑card deck for every extra pair of players beyond four.</li>
+      <li><strong>Speed Round.</strong> Use a single deck in a 1v1 and lower the act ive character count per player to 2 for a much faster game. Reduce the number of cards set aside during the build phase to 10. </li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>©&nbsp;2025&nbsp;Shovels&nbsp;Design&nbsp;Team.  Have fun digging!</p>
+  </footer>
+
+
+</body><style class="stylus">.library-browser .v-expansion-panel-content__wrap > :first-child {
+    position: sticky;
+    top: -15px; z-index: 1;
+    background-color: #303030;
+    padding: 10px;
+    margin: 0 !important;
+}</style></html>
