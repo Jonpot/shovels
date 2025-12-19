@@ -45,29 +45,34 @@ def draw_cards(state: GameState, player_id: str, sources: List[str]):
     
     # Reset flag at start of draw
     player.can_discard_second_face = False
-    drawn_cards = []
     
+    # 1. Check availability FIRST for atomicity
+    deck_needed = sources.count("DECK")
+    discard_needed = sources.count("DISCARD")
+    
+    if deck_needed > len(state.deck):
+        raise ValueError(f"Not enough cards in deck (needed {deck_needed}, has {len(state.deck)})")
+    if discard_needed > len(state.discard_pile):
+        raise ValueError(f"Not enough cards in discard pile (needed {discard_needed}, has {len(state.discard_pile)})")
+        
+    # 2. Perform the draw
+    temp_drawn = []
     for source in sources:
         if source == "DISCARD":
-            if not state.discard_pile:
-                raise ValueError("Discard pile is empty")
-            card = state.discard_pile.pop()
-        elif source == "DECK":
-            if not state.deck:
-                raise ValueError("Deck is empty. Players must draw from discard pile if possible.")
-            card = state.deck.pop()
-        else:
-            raise ValueError(f"Invalid source: {source}")
-        
-        player.hand.append(card)
-        drawn_cards.append(card)
+            temp_drawn.append(state.discard_pile.pop())
+        else: # DECK
+            temp_drawn.append(state.deck.pop())
     
-    # Flag is true iff both drawn cards are face cards
-    if all(c.is_face for c in drawn_cards):
+    # Successful draw: Add all to hand
+    for card in temp_drawn:
+        player.hand.append(card)
+    
+    # Flag is true if both drawn cards are face cards
+    if all(c.is_face for c in temp_drawn):
         player.can_discard_second_face = True
         
     state.turn_subphase = "DISCARD"
-    log_event(state, "DRAW", {"sources": sources, "drawn": [c.model_dump() for c in drawn_cards]})
+    log_event(state, "DRAW", {"sources": sources, "drawn": [c.model_dump() for c in temp_drawn]})
 
 def discard_card(state: GameState, player_id: str, card_index: int):
     """
@@ -119,18 +124,18 @@ def play_card(state: GameState, player_id: str, card_index: int, character_index
         else:
             raise ValueError("Character index required for playing cards in Phase 1 (unless discarding a second face card)")
 
-    # Play logic
-    player.hand.pop(card_index)
-    log_event(state, "PLAY_CARD", {"card": card.model_dump(), "character_index": character_index})
-    
+    # Validation and Play logic
     if not card.is_face:
         if character_index >= len(player.characters):
             raise ValueError("Cannot create new character with a number card")
+        # All valid, now consume card and apply
+        player.hand.pop(card_index)
         player.characters[character_index].stack.append(card)
     else:
         # Replacement or New Character
         if character_index < len(player.characters):
             # Replace existing
+            player.hand.pop(card_index)
             old_char = player.characters[character_index]
             old_face = Card(rank=0, suit=old_char.suit, is_face=True, face_rank=old_char.rank)
             state.discard_pile.append(old_face)
@@ -139,11 +144,13 @@ def play_card(state: GameState, player_id: str, card_index: int, character_index
             player.characters[character_index].is_tapped = False
         elif character_index == len(player.characters) and character_index < state.max_characters:
             # Create new character
+            player.hand.pop(card_index)
             new_char = Character(rank=card.face_rank, suit=card.suit, stack=[])
             player.characters.append(new_char)
         else:
             raise ValueError(f"Invalid character index or too many characters (max {state.max_characters})")
     
+    log_event(state, "PLAY_CARD", {"card": card.model_dump(), "character_index": character_index})
     end_turn(state)
 
 def buy_card(state: GameState, player_id: str, slot_index: int, char_index: int, is_free: bool = False):
@@ -526,9 +533,11 @@ def attack_heart(state: GameState, player_id: str, target_player_id: str, target
                 log_event(state, "PLAYER_DEAD", {"player_id": target_player_id, "reason": "HEART_OVERWHELM"})
         return
 
+    heart_found = False
     for i in range(len(target_char.stack) - 1, -1, -1):
         card = target_char.stack[i]
         if card.suit == Suit.HEARTS:
+            heart_found = True
             if damage >= (card.rank + target_char.shield):
                 num_to_remove = len(target_char.stack) - i
                 for _ in range(num_to_remove):
@@ -536,6 +545,21 @@ def attack_heart(state: GameState, player_id: str, target_player_id: str, target
                 state.cards_removed_this_turn = True
                 log_event(state, "HEART_BROKEN", {"target_player_id": target_player_id, "target_char_index": target_char_index, "damage": damage, "shield": target_char.shield})
                 break
+    
+    # If no Heart Card was found to absorb damage, the character dies (if damage >= 1)
+    if not heart_found and damage >= 1:
+        log_event(state, "CHARACTER_DEATH", {
+            "player_id": target_player_id, 
+            "character_index": target_char_index, 
+            "reason": "HEART_OVERWHELM",
+            "rank": target_char.rank,
+            "suit": target_char.suit
+        })
+        target_player.characters.pop(target_char_index)
+        state.cards_removed_this_turn = True
+        if not target_player.characters:
+            target_player.is_alive = False
+            log_event(state, "PLAYER_DEAD", {"player_id": target_player_id, "reason": "HEART_OVERWHELM"})
 
 def end_turn(state: GameState):
     player = get_current_player(state)

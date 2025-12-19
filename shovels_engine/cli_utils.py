@@ -50,3 +50,60 @@ def print_state(state: GameState):
         print(f"\nGRAVEDIG POOL: [{pool_str}]")
     
     print("="*50)
+
+def print_banner(text: str):
+    print("\n" + "#"*60)
+    print(f"## {text.center(54)} ##")
+    print("#"*60 + "\n")
+
+def print_bot_summary(state: GameState, player_id: str):
+    # Find events since the last TURN_START or the start of the list
+    relevant_events = []
+    # Find the last TURN_START for this specific bot
+    start_idx = -1
+    for i in range(len(state.events) - 1, -1, -1):
+        e = state.events[i]
+        if e['event_type'] == "TURN_START" and e['player_id'] == player_id:
+            start_idx = i
+            break
+    
+    if start_idx == -1:
+        # Fallback to last 5 events
+        relevant_events = [e for e in state.events[-5:] if e.get('player_id') == player_id]
+    else:
+        relevant_events = [e for e in state.events[start_idx:] if e.get('player_id') == player_id]
+    
+    if not relevant_events:
+        return
+
+    print(f"\n[BOT {player_id} ACTION SUMMARY]:")
+    for e in relevant_events:
+        etype = e['event_type']
+        data = e['data']
+        if etype == "TURN_START": continue # Skip the start log
+        
+        if etype == "DRAW":
+            print(f"  - Drew {len(data['drawn'])} cards.")
+        elif etype == "DISCARD_HAND":
+            c = data['card']
+            print(f"  - Discarded {c['rank']}{c['suit'][0]}.")
+        elif etype == "PLAY_CARD":
+            c = data['card']
+            target = f"Character {data['character_index']}" if data['character_index'] is not None else "NEW SLOT"
+            print(f"  - Played {c['rank'] if not c['is_face'] else c['face_rank']}{c['suit'][0]} to {target}.")
+        elif etype == "ACTION":
+            print(f"  - Performed {data['action_suit']} Action with rank {data['total_rank']}.")
+        elif etype == "DIG_ACTION":
+            print(f"  - Dug up {data['dig_count']} cards.")
+        elif etype == "TAP_HERO":
+            print(f"  - Tapped {data['rank']}{data['suit'][0]} Hero Power.")
+        elif etype == "BUY_CARD":
+            print(f"  - Bought {data['card']['rank'] if not data['card']['is_face'] else data['card']['face_rank']}{data['card']['suit'][0]} for {data['price']} coins.")
+        elif etype == "CHARACTER_DEATH":
+            print(f"  - Character Died: {data['rank']}{data['suit'][0]} (Reason: {data['reason']})")
+        elif etype == "FACE_STRIKE":
+            print(f"  - Face Struck Player {data['target_player_id']} Character {data['target_char_index']}.")
+        elif etype == "PLAYER_DEAD":
+            print(f"  - PLAYER ELIMINATED: {data['player_id']} (Reason: {data['reason']})")
+        else:
+            print(f"  - {etype}: {data}")

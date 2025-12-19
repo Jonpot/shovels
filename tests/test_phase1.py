@@ -12,7 +12,7 @@ class TestPhase1Robust(unittest.TestCase):
 
     def test_draw_empty_deck_error(self):
         self.state.deck = []
-        with self.assertRaisesRegex(ValueError, "Deck is empty"):
+        with self.assertRaisesRegex(ValueError, "Not enough cards in deck"):
             draw_cards(self.state, "Alice", ["DECK", "DECK"])
 
     def test_draw_face_cards_flag(self):
@@ -115,6 +115,27 @@ class TestPhase1Robust(unittest.TestCase):
         
         transition_to_phase_2(self.state)
         self.assertEqual(self.state.current_turn_index, 1) # Bob wins with 8
+
+    def test_play_card_atomicity(self):
+        """Verify that a card is not consumed if play_card raises a ValueError."""
+        # 1. Number card to invalid new slot
+        self.state.players[0].hand = [Card(rank=5, suit=Suit.HEARTS)]
+        self.state.turn_subphase = "PLAY"
+        
+        with self.assertRaisesRegex(ValueError, "Cannot create new character with a number card"):
+            play_card(self.state, "Alice", 0, 3) # Index 3 is new slot
+        
+        # Verify card is still in hand
+        self.assertEqual(len(self.state.players[0].hand), 1)
+        self.assertEqual(self.state.players[0].hand[0].rank, 5)
+
+        # 2. Face card to invalid high index
+        self.state.players[0].hand = [Card(rank=0, suit=Suit.HEARTS, is_face=True, face_rank="K")]
+        with self.assertRaisesRegex(ValueError, "too many characters"):
+            play_card(self.state, "Alice", 0, 4) # Exceeds max (3) and next available (3)
+            
+        self.assertEqual(len(self.state.players[0].hand), 1)
+        self.assertEqual(self.state.players[0].hand[0].face_rank, "K")
 
 if __name__ == "__main__":
     unittest.main()

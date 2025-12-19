@@ -7,7 +7,7 @@ from shovels_engine.engine import (
     tap_hero_power, resolve_gravedig, buy_card,
     get_current_player, end_turn
 )
-from shovels_engine.cli_utils import print_state
+from shovels_engine.cli_utils import print_state, print_banner, print_bot_summary
 from shovels_engine.agents import RandomAgent
 
 def get_input(prompt="> "):
@@ -29,8 +29,14 @@ def play_cli():
     
     state = setup_game(player_ids)
     bot = RandomAgent()
+    last_phase = state.phase
 
     while not state.is_over:
+        if state.phase != last_phase:
+            print_banner(f"PHASE {state.phase} START")
+            last_phase = state.phase
+            input("Press Enter to continue...")
+
         current_player = get_current_player(state)
         print_state(state)
         
@@ -152,7 +158,8 @@ def play_cli():
         else:
             print(f"Bot {current_player.id} is thinking...")
             bot.act(state, current_player.id)
-            # Short delay for readability? Maybe not needed in CLI
+            print_bot_summary(state, current_player.id)
+            input("\nPress Enter to continue...")
     
     print_state(state)
     print(f"\nGAME OVER! Winner: {state.winner_id}")

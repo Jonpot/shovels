@@ -20,12 +20,21 @@ class RandomAgent(Agent):
             if state.phase == 1:
                 if state.turn_subphase == "DRAW":
                     sources = []
+                    temp_deck_count = len(state.deck)
+                    temp_discard_count = len(state.discard_pile)
+                    
                     for _ in range(2):
-                        if state.deck:
+                        if temp_deck_count > 0:
                             sources.append("DECK")
-                        elif state.discard_pile:
+                            temp_deck_count -= 1
+                        elif temp_discard_count > 0:
                             sources.append("DISCARD")
-                    if sources:
+                            temp_discard_count -= 1
+                            
+                    if len(sources) == 2:
+                        # Enforce DISCARD first if drawing from both
+                        if "DISCARD" in sources and "DECK" in sources:
+                            sources = ["DISCARD", "DECK"]
                         draw_cards(state, player_id, sources)
                     else:
                         end_turn(state)
@@ -34,7 +43,10 @@ class RandomAgent(Agent):
                 elif state.turn_subphase == "PLAY":
                     # Try to play a card on a valid character index
                     played = False
-                    for c_idx in range(len(player.characters) + 1):
+                    # Randomize order to avoid bias towards index 0
+                    candidates = list(range(len(player.characters) + 1))
+                    random.shuffle(candidates)
+                    for c_idx in candidates:
                         target_idx = c_idx if c_idx < len(player.characters) else None
                         if target_idx is not None and target_idx >= state.max_characters:
                             target_idx = None
