@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from pydantic import BaseModel, Field
 import random
 
@@ -15,6 +15,12 @@ class Card(BaseModel):
     is_face: bool = False
     face_rank: Optional[str] = None  # "J", "Q", "K"
     is_ace: bool = False
+
+    @property
+    def price(self) -> int:
+        if self.is_face:
+            return {"J": 3, "Q": 4, "K": 5}[self.face_rank]
+        return 10 if self.is_ace else self.rank
 
 class Character(BaseModel):
     rank: str  # J, Q, K
@@ -48,6 +54,11 @@ class GameState(BaseModel):
     character_tapped_this_turn: bool = False
     dug_cards: List[Card] = Field(default_factory=list)
     active_character_index: Optional[int] = None
+    gravedig_pool: List[Card] = Field(default_factory=list)
+    free_buys_remaining: int = 0
+    events: List[Dict] = Field(default_factory=list)
+    winner_id: Optional[str] = None
+    is_over: bool = False
 
 def initialize_full_pool() -> List[Card]:
     """Creates the full 104-card pool (2 standard 52-card decks)."""
@@ -91,12 +102,8 @@ def setup_game(player_ids: List[str]) -> GameState:
     # Create Shop Pile (20 cards)
     shop_pile = [remaining_deck.pop() for _ in range(20)]
     
-    # Create Shop Row (3 cards)
-    shop_row = [remaining_deck.pop() for _ in range(3)]
-    
     return GameState(
         deck=remaining_deck,
         shop_pile=shop_pile,
-        shop_row=shop_row,
         players=players
     )

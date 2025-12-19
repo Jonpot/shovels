@@ -1,6 +1,6 @@
 import unittest
 from shovels_engine.models import GameState, Card, Player, Character, Suit
-from shovels_engine.engine import tap_hero_power
+from shovels_engine.engine import tap_hero_power, buy_card, resolve_gravedig
 
 class TestHeroPowers(unittest.TestCase):
     def test_clubs_burst(self):
@@ -38,9 +38,15 @@ class TestHeroPowers(unittest.TestCase):
             shop_row=[Card(rank=10, suit=Suit.CLUBS, is_ace=True)],
             shop_pile=[Card(rank=2, suit=Suit.DIAMONDS)]
         )
-        tap_hero_power(state, "p1", 0, target_info={'slots': [0]})
+        tap_hero_power(state, "p1", 0) 
+        self.assertEqual(state.turn_subphase, "SHOP_FREE_BUY")
+        self.assertEqual(state.free_buys_remaining, 1)
+        
+        # Now buy for free
+        buy_card(state, "p1", 0, 0)
         self.assertEqual(len(p1.characters[0].stack), 1)
-        self.assertEqual(p1.coins, 0)
+        self.assertEqual(state.free_buys_remaining, 0)
+        self.assertIsNone(state.shop_row[0])
 
     def test_spades_gravedig(self):
         p1 = Player(id="p1", name="P1", characters=[
@@ -57,12 +63,16 @@ class TestHeroPowers(unittest.TestCase):
                 Card(rank=6, suit=Suit.CLUBS)
             ]
         )
-        # Keep the 6 (top of discard, index 0 in available)
-        # available = [6, 5, 4, 3, 2] (popped in order)
-        # index 0 is 6.
-        tap_hero_power(state, "p1", 0, target_info={'indices': [0]})
-        self.assertEqual(p1.characters[0].stack[0].rank, 6)
+        # Spades power now deals 5 cards to a pool
+        tap_hero_power(state, "p1", 0) 
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(len(state.gravedig_pool), 5)
+        
+        # Resolve gravedig
+        resolve_gravedig(state, "p1", 0, [0])
+        self.assertEqual(len(p1.characters[0].stack), 1)
         self.assertEqual(len(state.discard_pile), 4)
+        self.assertEqual(state.turn_subphase, "BATTLE_ACTION")
 
     def test_hearts_shield_out_of_turn(self):
         p1 = Player(id="p1", name="P1", characters=[Character(rank="J", suit=Suit.CLUBS)])

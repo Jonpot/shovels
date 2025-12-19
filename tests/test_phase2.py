@@ -16,6 +16,7 @@ class TestPhase2(unittest.TestCase):
         perform_action(state, "p1", 0, 2, Suit.DIAMONDS)
         self.assertEqual(len(p1.characters[0].stack), 1)
         self.assertEqual(p1.coins, 3)
+        self.assertEqual(state.turn_subphase, "SHOPPING")
 
     def test_clubs_heart_removal(self):
         p1 = Player(id="p1", name="P1", characters=[
@@ -50,6 +51,7 @@ class TestPhase2(unittest.TestCase):
         self.assertEqual(state.current_turn_index, 0)
         perform_action(state, "p1", None, 0, Suit.DIAMONDS, dug_indices=[0])
         self.assertEqual(p1.coins, 5)
+        self.assertEqual(state.turn_subphase, "SHOPPING")
         self.assertEqual(len(state.dug_cards), 0)
 
     def test_face_strike_suicide(self):
@@ -59,15 +61,17 @@ class TestPhase2(unittest.TestCase):
         ])
         state = GameState(players=[p1, p2], phase=2, turn_subphase="BATTLE_ACTION", current_turn_index=0)
         apply_face_strike(state, "p1", 0, "p2", 0)
-        self.assertEqual(len(p1.characters), 0)
-        self.assertFalse(p1.is_alive)
+        p1_state = state.players[0]
+        self.assertEqual(len(p1_state.characters), 0)
+        self.assertFalse(p1_state.is_alive)
 
     def test_must_act_rule(self):
         p1 = Player(id="p1", name="P1", characters=[Character(rank="J", suit=Suit.CLUBS, stack=[])])
         state = GameState(players=[p1], phase=2, turn_subphase="BATTLE_ACTION", current_turn_index=0)
         end_turn(state)
-        self.assertEqual(len(p1.characters), 0)
-        self.assertFalse(p1.is_alive)
+        p1_state = state.players[0]
+        self.assertEqual(len(p1_state.characters), 0)
+        self.assertFalse(p1_state.is_alive)
 
     def test_spade_dig_character_consistency(self):
         p1 = Player(id="p1", name="P1", characters=[
@@ -94,6 +98,7 @@ class TestPhase2(unittest.TestCase):
         state.dug_cards = [Card(rank=5, suit=Suit.DIAMONDS)]
         perform_action(state, "p1", 0, 0, Suit.DIAMONDS, dug_indices=[0])
         self.assertEqual(p1.coins, 5)
+        self.assertEqual(state.turn_subphase, "SHOPPING")
 
     def test_clubs_direct_face_kill(self):
         """Clubs attack on an exposed face card should kill the character."""
@@ -111,8 +116,9 @@ class TestPhase2(unittest.TestCase):
             'target_char_index': 0
         })
         
-        self.assertEqual(len(p2.characters), 0)
-        self.assertFalse(p2.is_alive)
+        p2_state = state.players[1]
+        self.assertEqual(len(p2_state.characters), 0)
+        self.assertFalse(p2_state.is_alive)
 
     def test_spade_dig_to_face_strike(self):
         """Digging to the face card allows an unexposed Face Strike."""
@@ -134,7 +140,8 @@ class TestPhase2(unittest.TestCase):
         
         # Now apply face strike (allowed because we are digging)
         apply_face_strike(state, "p1", 0, "p2", 0)
-        self.assertEqual(len(p2.characters), 0)
+        p2_state = state.players[1]
+        self.assertEqual(len(p2_state.characters), 0)
 
     def test_face_strike_suicide_prevention(self):
         """Failed Face Strike doesn't suicide if cards were removed by digging earlier."""

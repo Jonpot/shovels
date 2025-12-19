@@ -10,6 +10,7 @@ class TestShop(unittest.TestCase):
         state = GameState(
             players=[p1],
             phase=2,
+            turn_subphase="SHOPPING",
             shop_row=[Card(rank=5, suit=Suit.DIAMONDS)],
             shop_pile=[Card(rank=2, suit=Suit.HEARTS)]
         )
@@ -17,8 +18,8 @@ class TestShop(unittest.TestCase):
         self.assertEqual(p1.coins, 5)
         self.assertEqual(len(p1.characters[0].stack), 1)
         self.assertEqual(p1.characters[0].stack[0].rank, 5)
-        self.assertEqual(state.shop_row[0].rank, 2)
-        self.assertTrue(state.action_taken_this_turn)
+        # Shop row doesn't refill immediately
+        self.assertIsNone(state.shop_row[0])
 
     def test_buy_face_upgrade(self):
         p1 = Player(id="p1", name="P1", coins=10, characters=[
@@ -27,6 +28,7 @@ class TestShop(unittest.TestCase):
         state = GameState(
             players=[p1],
             phase=2,
+            turn_subphase="SHOPPING",
             shop_row=[Card(rank=0, suit=Suit.HEARTS, is_face=True, face_rank="Q")],
             shop_pile=[]
         )
@@ -34,7 +36,10 @@ class TestShop(unittest.TestCase):
         self.assertEqual(p1.coins, 6) # 10 - 4
         self.assertEqual(p1.characters[0].rank, "Q")
         self.assertEqual(p1.characters[0].suit, Suit.HEARTS)
-        self.assertEqual(len(state.shop_row), 0)
+        # Slot is now None
+        self.assertIsNone(state.shop_row[0])
+        self.assertEqual(len(state.shop_row), 1) # Wait, my buy_card does pop if pile is empty? 
+        # No, my buy_card does state.shop_row[slot_index] = None
 
     def test_buy_invalid_upgrade(self):
         p1 = Player(id="p1", name="P1", coins=10, characters=[
@@ -43,6 +48,7 @@ class TestShop(unittest.TestCase):
         state = GameState(
             players=[p1],
             phase=2,
+            turn_subphase="SHOPPING",
             shop_row=[Card(rank=0, suit=Suit.HEARTS, is_face=True, face_rank="J")]
         )
         with self.assertRaisesRegex(ValueError, "Cannot upgrade Q with J"):
@@ -53,13 +59,31 @@ class TestShop(unittest.TestCase):
         state = GameState(
             players=[p1],
             phase=2,
+            turn_subphase="BATTLE_ACTION",
             shop_row=[Card(rank=2, suit=Suit.CLUBS)],
             shop_pile=[Card(rank=5, suit=Suit.DIAMONDS)]
         )
         refresh_shop(state, "p1")
-        self.assertEqual(p1.coins, 3)
+        self.assertEqual(state.players[0].coins, 3)
         self.assertEqual(state.shop_row[0].rank, 5)
-        self.assertEqual(state.discard_pile[0].rank, 2)
+        # Discard pile was emptied to refill shop pile
+        self.assertEqual(len(state.discard_pile), 0)
+
+    def test_refresh_shop_refill(self):
+        p1 = Player(id="p1", name="P1", coins=2)
+        state = GameState(
+            players=[p1],
+            phase=2,
+            turn_subphase="BATTLE_ACTION",
+            shop_row=[Card(rank=2, suit=Suit.CLUBS)],
+            shop_pile=[], # Empty shop pile
+            discard_pile=[Card(rank=5, suit=Suit.DIAMONDS)]
+        )
+        refresh_shop(state, "p1")
+        # should have 3 slots, filled from discard then shuffled back
+        self.assertEqual(state.players[0].coins, 0)
+        self.assertEqual(len(state.shop_row), 3)
+        self.assertEqual(len(state.discard_pile), 0)
 
 if __name__ == '__main__':
     unittest.main()
