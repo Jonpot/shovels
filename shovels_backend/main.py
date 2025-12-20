@@ -5,9 +5,9 @@ from shovels_backend.manager import GameRoomManager
 from shovels_backend.schemas import RoomCreateRequest, RoomInfoResponse
 from shovels_backend.auth import oauth, create_access_token, get_current_user, SECRET_KEY, decode_access_token
 from shovels_backend.ws_schemas import WsMessage
+from shovels_backend.config import settings
 from shovels_engine import engine
 from typing import List
-import os
 import json
 
 app = FastAPI(title="Shovels API")
@@ -56,7 +56,10 @@ async def auth_callback(request: Request):
         }
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Redirect back to frontend
+    frontend_url = settings.FRONTEND_URL
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"{frontend_url}/#token={access_token}")
 
 @app.get("/rooms", response_model=List[RoomInfoResponse])
 def list_rooms(user: dict = Depends(get_current_user)):
@@ -92,22 +95,27 @@ def join_room(room_id: str, player_id: str, user: dict = Depends(get_current_use
 async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
     # Verify JWT from query param
     try:
+        print(f"WS Connect: room={room_id}, token={token[:10]}...")
         payload = decode_access_token(token)
         user_id = payload.get("sub")
         if not user_id:
+            print("WS Error: No user_id in token")
             await websocket.close(code=4001)
             return
         user_data = {"id": user_id, "email": payload.get("email"), "name": payload.get("name")}
-    except Exception:
+    except Exception as e:
+        print(f"WS Error: Token validation failed - {str(e)}")
         await websocket.close(code=4001)
         return
 
     room = room_manager.get_room(room_id)
     if not room:
+        print(f"WS Error: Room {room_id} not found")
         await websocket.close(code=4004)
         return
 
-    await room.connect(websocket)
+    print(f"WS Accepted: User {user_id} joining room {room_id}")
+    await room.connect(websocket, user_id)
     try:
         while True:
             data = await websocket.receive_text()
@@ -159,4 +167,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
                     await websocket.send_json({"type": "error", "message": str(e)})
 
     except WebSocketDisconnect:
-        room.disconnect(websocket)
+        print(f"WS Disconnect: User {user_id} left room {room_id}")
+        room.disconnect(user_id)
+        if room.is_empty():
+            print(f"Room {room_id} is empty. Deleting.")
+            room_manager.delete_room(room_id)
+        else:
+            # Broadcast updated player list to remaining clients
+            await room.broadcast_lobby_state()
