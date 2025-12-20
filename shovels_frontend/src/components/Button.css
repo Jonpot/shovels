@@ -1,0 +1,76 @@
+.shovels-button {
+    position: relative;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--surface);
+    color: var(--text-main);
+    box-shadow: var(--shadow-tactile);
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.button-content {
+    position: relative;
+    z-index: 1;
+}
+
+.shovels-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+}
+
+/* Primary (Gold) Variant */
+.shovels-button.primary {
+    border-color: var(--primary-gold);
+    color: var(--primary-gold);
+}
+
+.shovels-button.primary:hover {
+    background: rgba(212, 175, 55, 0.1);
+    box-shadow: var(--shadow-glow);
+    border-color: #f1c40f;
+}
+
+/* Secondary (Crimson) Variant */
+.shovels-button.secondary {
+    border-color: var(--secondary-crimson);
+    color: #ff4d4d;
+}
+
+.shovels-button.secondary:hover {
+    background: rgba(139, 0, 0, 0.1);
+    box-shadow: 0 0 15px var(--glow-crimson);
+}
+
+/* Interaction */
+.shovels-button:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.shovels-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.shovels-button.primary:active {
+    background: rgba(212, 175, 55, 0.2);
+}

@@ -1,0 +1,39 @@
+.shovels-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 220px;
+    /* Space for the cards to overlap */
+    width: 140px;
+}
+
+.stack-card-wrapper {
+    position: absolute;
+    top: calc(var(--card-index) * 40px);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fanned effect (optional slight rotation) */
+.stack-card-wrapper:nth-child(even) {
+    transform: rotate(1deg);
+}
+
+.stack-card-wrapper:nth-child(odd) {
+    transform: rotate(-1deg);
+}
+
+/* Hover Maginification */
+.shovels-stack:hover .stack-card-wrapper {
+    top: calc(var(--card-index) * 60px);
+    /* Fan out more on hover */
+}
+
+.stack-card-wrapper:hover {
+    transform: translateY(-20px) scale(1.1) !important;
+    z-index: 100 !important;
+}
+
+.stack-card-wrapper:hover~.stack-card-wrapper {
+    transform: translateY(40px);
+    /* Push subsequent cards down */
+}
