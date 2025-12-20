@@ -1,11 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from shovels_backend.manager import GameRoomManager
 from shovels_backend.schemas import RoomCreateRequest, RoomInfoResponse
-from shovels_backend.auth import oauth, create_access_token, get_current_user, SECRET_KEY
+from shovels_backend.auth import oauth, create_access_token, get_current_user, SECRET_KEY, decode_access_token
+from shovels_backend.ws_schemas import WsMessage
+from shovels_engine import engine
 from typing import List
 import os
+import json
 
 app = FastAPI(title="Shovels API")
 
@@ -84,3 +87,76 @@ def join_room(room_id: str, player_id: str, user: dict = Depends(get_current_use
         return {"message": "Joined successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@app.websocket("/ws/room/{room_id}")
+async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
+    # Verify JWT from query param
+    try:
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+        if not user_id:
+            await websocket.close(code=4001)
+            return
+        user_data = {"id": user_id, "email": payload.get("email"), "name": payload.get("name")}
+    except Exception:
+        await websocket.close(code=4001)
+        return
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        await websocket.close(code=4004)
+        return
+
+    await room.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message_dict = json.loads(data)
+            msg = WsMessage(**message_dict)
+            
+            if msg.type == "start_game":
+                try:
+                    await room.start_game()
+                except Exception as e:
+                    await websocket.send_json({"type": "error", "message": f"Could not start game: {str(e)}"})
+            
+            elif msg.type == "action":
+                if not room.state:
+                    await websocket.send_json({"type": "error", "message": "Game not started"})
+                    continue
+                
+                action_data = msg.data
+                action_type = action_data.get("action_type")
+                params = action_data.get("params", {})
+                
+                try:
+                    # Map action types to engine functions
+                    if action_type == "draw":
+                        engine.draw_cards(room.state, user_data["id"], **params)
+                    elif action_type == "discard":
+                        engine.discard_card(room.state, user_data["id"], **params)
+                    elif action_type == "play":
+                        engine.play_card(room.state, user_data["id"], **params)
+                    elif action_type == "buy":
+                        engine.buy_card(room.state, user_data["id"], **params)
+                    elif action_type == "refresh":
+                        engine.refresh_shop(room.state, user_data["id"])
+                    elif action_type == "tap":
+                        engine.tap_hero_power(room.state, user_data["id"], **params)
+                    elif action_type == "gravedig":
+                        engine.resolve_gravedig(room.state, user_data["id"], **params)
+                    elif action_type == "action":
+                        engine.perform_action(room.state, user_data["id"], **params)
+                    elif action_type == "strike":
+                        engine.apply_face_strike(room.state, user_data["id"], **params)
+                    else:
+                        await websocket.send_json({"type": "error", "message": f"Unknown action: {action_type}"})
+                        continue
+                        
+                    # Broadcast update
+                    await room.broadcast_state()
+                except Exception as e:
+                    await websocket.send_json({"type": "error", "message": str(e)})
+
+    except WebSocketDisconnect:
+        room.disconnect(websocket)
