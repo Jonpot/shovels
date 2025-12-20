@@ -4,18 +4,28 @@ from shovels_backend.main import app
 
 client = TestClient(app)
 
+from fastapi import Depends
+from shovels_backend.auth import get_current_user
+
+# Mock user
+def get_mock_user():
+    return {"id": "test_user", "email": "test@example.com", "name": "Test User"}
+
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
-def test_create_and_list_rooms():
-    # Initially no rooms
+def test_unauthorized_access():
     response = client.get("/rooms")
-    assert response.status_code == 200
-    assert response.json() == []
+    assert response.status_code == 401
 
-    # Create a room
+def test_create_and_list_rooms():
+    # Override auth
+    app.dependency_overrides[get_current_user] = get_mock_user
+    
+    # Initially no rooms (clean state for this test if possible, but manager is global)
+    # For now just check we can create one
     response = client.post("/rooms", json={"name": "Test Room"})
     assert response.status_code == 200
     data = response.json()
@@ -26,10 +36,14 @@ def test_create_and_list_rooms():
     response = client.get("/rooms")
     assert response.status_code == 200
     rooms = response.json()
-    assert len(rooms) == 1
-    assert rooms[0]["room_id"] == room_id
+    assert any(r["room_id"] == room_id for r in rooms)
+    
+    # Clean up override
+    app.dependency_overrides.clear()
 
 def test_join_room():
+    app.dependency_overrides[get_current_user] = get_mock_user
+    
     # Create a room
     response = client.post("/rooms", json={"name": "Join Test"})
     room_id = response.json()["room_id"]
@@ -42,6 +56,7 @@ def test_join_room():
     # Verify player count
     response = client.get("/rooms")
     rooms = response.json()
-    # Find the correct room in the list
     room = next(r for r in rooms if r["room_id"] == room_id)
     assert room["player_count"] == 1
+    
+    app.dependency_overrides.clear()

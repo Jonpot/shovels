@@ -1,3 +1,4 @@
 /shovels_engine/__pycache__
 /tests/__pycache__
 *.pyc
+/shovels_backend/.env
