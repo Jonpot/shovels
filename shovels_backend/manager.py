@@ -10,6 +10,7 @@ class GameRoom:
         self.name = name
         self.state: Optional[GameState] = None
         self.player_ids: List[str] = []
+        self.player_names: Dict[str, str] = {}
         self.connections: Dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, player_id: str):
@@ -17,6 +18,8 @@ class GameRoom:
         self.connections[player_id] = websocket
         if self.state:
             await self.send_state(websocket)
+        else:
+            await self.broadcast_lobby_state()
 
     def disconnect(self, player_id: str):
         if player_id in self.connections:
@@ -25,6 +28,8 @@ class GameRoom:
         # If game hasn't started, remove player from room
         if not self.state and player_id in self.player_ids:
             self.player_ids.remove(player_id)
+            if player_id in self.player_names:
+                del self.player_names[player_id]
             
     def is_empty(self) -> bool:
         return len(self.player_ids) == 0
@@ -60,7 +65,10 @@ class GameRoom:
     async def broadcast_lobby_state(self):
         """Broadcasts the current player list as if it were a partial game state."""
         # Create a mock state structure that the frontend will accept
-        players_data = [{"id": pid, "name": pid, "is_alive": True} for pid in self.player_ids]
+        players_data = [
+            {"id": pid, "name": self.player_names.get(pid, pid), "is_alive": True} 
+            for pid in self.player_ids
+        ]
         # In a real app, we'd store names in player_ids or separate mapping. 
         # For now, we only store IDs. To get names, we might need to change how we track players.
         # But wait, main.py passes `user_id` to `connect`.
@@ -91,7 +99,7 @@ class GameRoom:
     async def start_game(self):
         if len(self.player_ids) < 2:
             raise ValueError("Need at least 2 players to start game")
-        self.state = setup_game(self.player_ids)
+        self.state = setup_game(self.player_ids, self.player_names)
         await self.broadcast_state()
 
 class GameRoomManager:
@@ -110,12 +118,13 @@ class GameRoomManager:
     def list_rooms(self) -> List[GameRoom]:
         return list(self.rooms.values())
 
-    def join_room(self, room_id: str, player_id: str):
+    def join_room(self, room_id: str, player_id: str, player_name: str):
         room = self.get_room(room_id)
         if not room:
             raise ValueError("Room not found")
         if player_id not in room.player_ids:
             room.player_ids.append(player_id)
+        room.player_names[player_id] = player_name
 
     def delete_room(self, room_id: str):
         if room_id in self.rooms:

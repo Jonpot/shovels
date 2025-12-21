@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Users, Shield, ArrowLeft, Play, UserPlus } from 'lucide-react';
 import Button from '../components/Button';
 import { getWsUrl } from '../utils/api';
+import GameBoard from './GameBoard';
 import './LobbyRoom.css';
 
 const LobbyRoom = ({ roomId, user, onLeave }) => {
@@ -48,21 +49,37 @@ const LobbyRoom = ({ roomId, user, onLeave }) => {
         };
     }, [roomId]);
 
-    const handleStartGame = () => {
-        if (ws.current) {
-            ws.current.send(JSON.stringify({ type: 'start_game' }));
-        }
+    const sendMessage = (msg) => {
+        if (ws.current) ws.current.send(JSON.stringify(msg));
     };
 
-    // Temporary mock for players if game hasn't started
-    // In a real flow, the room manager should probably provide the player list
-    // before the engine's GameState is initialized.
-    // For now, if state is null, we'll show at least the current user.
+    const handleStartGame = () => {
+        sendMessage({ type: 'start_game' });
+    };
+
+    // Determine if we are in active game or lobby
+    // LOBBY phase is represented by phase="LOBBY" in our mock broadcast_lobby_state
+    // Real game phases are numbers (e.g., 1)
+    const isGameActive = gameState && gameState.phase !== "LOBBY";
+
+    if (isGameActive) {
+        return (
+            <GameBoard
+                gameState={gameState}
+                user={user}
+                sendMessage={sendMessage}
+                error={error}
+                setError={setError}
+            />
+        );
+    }
+
+    // Lobby View
     const players = gameState?.players || [
         { id: user.id, name: user.name, is_alive: true }
     ];
 
-    const canStart = players.length >= 2 && !gameState;
+    const canStart = players.length >= 2;
 
     return (
         <div className="lobby-room">
@@ -122,33 +139,21 @@ const LobbyRoom = ({ roomId, user, onLeave }) => {
                 {error && <div className="room-error">{error}</div>}
 
                 <div className="room-actions">
-                    {gameState ? (
-                        <div className="game-status">
-                            <Play size={24} className="pulse" />
-                            <p>Game is in progress! Prepare for battle.</p>
-                            <Button variant="primary" onClick={() => alert('Game board coming soon!')}>
-                                Enter Game
-                            </Button>
-                        </div>
-                    ) : (
-                        <>
-                            <p className="hint-text">
-                                {players.length < 2
-                                    ? "Waiting for at least one more player..."
-                                    : "Lobby full. Ready to start?"}
-                            </p>
-                            {user.id === players[0]?.id && (
-                                <Button
-                                    variant="primary"
-                                    size="large"
-                                    disabled={!canStart}
-                                    onClick={handleStartGame}
-                                >
-                                    <Play size={20} />
-                                    Start Game
-                                </Button>
-                            )}
-                        </>
+                    <p className="hint-text">
+                        {players.length < 2
+                            ? "Waiting for at least one more player..."
+                            : "Lobby full. Ready to start?"}
+                    </p>
+                    {user.id === players[0]?.id && (
+                        <Button
+                            variant="primary"
+                            size="large"
+                            disabled={!canStart}
+                            onClick={handleStartGame}
+                        >
+                            <Play size={20} />
+                            Start Game
+                        </Button>
                     )}
                 </div>
             </main>

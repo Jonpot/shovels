@@ -1,0 +1,43 @@
+.player-hand-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 200px;
+    padding-bottom: 2rem;
+    perspective: 1000px;
+    width: 100%;
+    pointer-events: none;
+    /* Let clicks pass through empty areas */
+    position: relative;
+    z-index: 100;
+    /* Ensure hand is above character stacks */
+}
+
+.hand-fan {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.hand-card-wrapper {
+    position: relative;
+    cursor: pointer;
+    transform-origin: bottom center;
+    transition: margin 0.2s ease;
+}
+
+.hand-card-wrapper.selected .shovels-card {
+    box-shadow: 0 0 0 4px var(--primary-gold), var(--shadow-glow);
+}
+
+.hand-card-wrapper:hover {
+    margin-left: -1.5rem;
+    /* Expand on hover */
+    margin-right: 1.5rem;
+}
+
+/* Reset margin on the first card so the whole hand doesn't shift too much */
+.hand-card-wrapper:first-child:hover {
+    margin-left: 0;
+}

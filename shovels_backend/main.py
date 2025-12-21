@@ -75,7 +75,9 @@ def list_rooms(user: dict = Depends(get_current_user)):
 
 @app.post("/rooms", response_model=RoomInfoResponse)
 def create_room(request: RoomCreateRequest, user: dict = Depends(get_current_user)):
+    player_name = user.get("name") or "Unknown"
     room = room_manager.create_room(request.name)
+    room_manager.join_room(room.room_id, user["id"], player_name)
     return RoomInfoResponse(
         room_id=room.room_id,
         name=room.name,
@@ -86,7 +88,8 @@ def create_room(request: RoomCreateRequest, user: dict = Depends(get_current_use
 @app.post("/rooms/{room_id}/join")
 def join_room(room_id: str, player_id: str, user: dict = Depends(get_current_user)):
     try:
-        room_manager.join_room(room_id, player_id)
+        player_name = user.get("name") or "Unknown"
+        room_manager.join_room(room_id, player_id, player_name)
         return {"message": "Joined successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

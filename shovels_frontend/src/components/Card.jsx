@@ -50,10 +50,15 @@ const PipLayout = ({ rank, suit }) => {
     );
 };
 
-const Card = ({ rank, suit, isFaceUp = true, className = '' }) => {
+const Card = ({ rank, suit, isFace = false, faceRank = null, isAce = false, isFaceUp = true, className = '' }) => {
     const isRed = suit && (suit.toLowerCase() === 'hearts' || suit.toLowerCase() === 'diamonds');
-    const isFaceCard = ['J', 'Q', 'K'].includes(rank);
-    const isAce = rank === 'A';
+    const isFaceCard = isFace || ['J', 'Q', 'K'].includes(rank) || ['J', 'Q', 'K'].includes(faceRank);
+
+    // Resolve what to show in the corner
+    let displayRank = rank;
+    if (isAce) displayRank = 'A';
+    else if (isFace) displayRank = faceRank;
+    else if (isFaceCard && !isFace) displayRank = rank; // Fallback if only rank "J" passed
 
     if (!isFaceUp) {
         return (
@@ -72,13 +77,13 @@ const Card = ({ rank, suit, isFaceUp = true, className = '' }) => {
     return (
         <div className={`shovels-card ${isRed ? 'red' : 'black'} ${className} ${isFaceCard ? 'face-card' : ''}`}>
             <div className="card-corner top-left">
-                <span className="card-rank">{rank}</span>
+                <span className="card-rank">{displayRank}</span>
                 <div className="card-suit-mini"><SuitIcon suit={suit} /></div>
             </div>
 
             <div className="card-center">
                 {isFaceCard ? (
-                    <img src={getFaceImage(rank, suit)} alt={`${rank} of ${suit}`} className="face-art-placeholder" />
+                    <img src={getFaceImage(isFace ? faceRank : rank, suit)} alt={`${displayRank} of ${suit}`} className="face-art-placeholder" />
                 ) : isAce ? (
                     <div className="ace-center">
                         <SuitIcon suit={suit} />
@@ -89,7 +94,7 @@ const Card = ({ rank, suit, isFaceUp = true, className = '' }) => {
             </div>
 
             <div className="card-corner bottom-right">
-                <span className="card-rank">{rank}</span>
+                <span className="card-rank">{displayRank}</span>
                 <div className="card-suit-mini"><SuitIcon suit={suit} /></div>
             </div>
         </div>

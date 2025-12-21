@@ -137,15 +137,18 @@ def play_card(state: GameState, player_id: str, card_index: int, character_index
             # Replace existing
             player.hand.pop(card_index)
             old_char = player.characters[character_index]
-            old_face = Card(rank=0, suit=old_char.suit, is_face=True, face_rank=old_char.rank)
+            # Must include uid for Card validation
+            old_face = Card(uid=old_char.uid, rank=0, suit=old_char.suit, is_face=True, face_rank=old_char.rank)
             state.discard_pile.append(old_face)
+            
+            player.characters[character_index].uid = card.uid
             player.characters[character_index].rank = card.face_rank
             player.characters[character_index].suit = card.suit
             player.characters[character_index].is_tapped = False
         elif character_index == len(player.characters) and character_index < state.max_characters:
             # Create new character
             player.hand.pop(card_index)
-            new_char = Character(rank=card.face_rank, suit=card.suit, stack=[])
+            new_char = Character(uid=card.uid, rank=card.face_rank, suit=card.suit, stack=[])
             player.characters.append(new_char)
         else:
             raise ValueError(f"Invalid character index or too many characters (max {state.max_characters})")

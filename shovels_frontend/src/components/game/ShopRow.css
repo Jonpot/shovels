@@ -1,0 +1,66 @@
+.shop-row {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    border: 1px solid var(--border);
+}
+
+.shop-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-weight: bold;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+}
+
+.shop-cards-container {
+    display: flex;
+    gap: 1rem;
+}
+
+.shop-slot {
+    position: relative;
+    width: 120px;
+    height: 168px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.shop-slot.buyable {
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.shop-slot.buyable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.5);
+}
+
+.price-tag {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--primary-gold);
+    color: var(--primary-gold);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.coin-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    color: var(--primary-gold);
+    font-weight: bold;
+}

@@ -10,6 +10,7 @@ class Suit(str, Enum):
     SPADES = "SPADES"
 
 class Card(BaseModel):
+    uid: str
     rank: int  # 2-10
     suit: Suit
     is_face: bool = False
@@ -23,6 +24,7 @@ class Card(BaseModel):
         return 10 if self.is_ace else self.rank
 
 class Character(BaseModel):
+    uid: str
     rank: str  # J, Q, K
     suit: Suit
     stack: List[Card] = Field(default_factory=list)
@@ -63,19 +65,23 @@ class GameState(BaseModel):
 def initialize_full_pool() -> List[Card]:
     """Creates the full 104-card pool (2 standard 52-card decks)."""
     pool = []
+    card_id = 0
     for _ in range(2):
         for suit in Suit:
             # Number cards 2-10
             for r in range(2, 11):
-                pool.append(Card(rank=r, suit=suit, is_face=False))
+                pool.append(Card(uid=f"card_{card_id}", rank=r, suit=suit, is_face=False))
+                card_id += 1
             # Ace (Value 10, but distinct from 10)
-            pool.append(Card(rank=10, suit=suit, is_face=False, is_ace=True))
+            pool.append(Card(uid=f"card_{card_id}", rank=10, suit=suit, is_face=False, is_ace=True))
+            card_id += 1
             # Face cards
             for f in ["J", "Q", "K"]:
-                pool.append(Card(rank=0, suit=suit, is_face=True, face_rank=f))
+                pool.append(Card(uid=f"card_{card_id}", rank=0, suit=suit, is_face=True, face_rank=f))
+                card_id += 1
     return pool
 
-def setup_game(player_ids: List[str]) -> GameState:
+def setup_game(player_ids: List[str], player_names: Optional[Dict[str, str]] = None) -> GameState:
     """Initializes a new game according to the rules."""
     pool = initialize_full_pool()
     random.shuffle(pool)
@@ -92,8 +98,11 @@ def setup_game(player_ids: List[str]) -> GameState:
         p_chars = []
         for _ in range(3):
             fc = face_cards.pop()
-            p_chars.append(Character(rank=fc.face_rank, suit=fc.suit))
-        players.append(Player(id=pid, name=f"Player {pid}", characters=p_chars))
+            p_chars.append(Character(uid=fc.uid, rank=fc.face_rank, suit=fc.suit))
+        
+        # Use real name if provided, else fallback to generic ID-based name
+        p_name = player_names.get(pid, f"Player {pid}") if player_names else f"Player {pid}"
+        players.append(Player(id=pid, name=p_name, characters=p_chars))
     
     # Return remaining face cards to deck
     remaining_deck.extend(face_cards)
