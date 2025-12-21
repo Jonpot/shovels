@@ -38,6 +38,10 @@ def test_ws_game_flow():
     # 3. Connect User 1 and User 2
     with client.websocket_connect(f"/ws/room/{room_id}?token={token1}") as ws1:
         with client.websocket_connect(f"/ws/room/{room_id}?token={token2}") as ws2:
+            # Drain lobby messages
+            ws1.receive_json() # user1 joined
+            ws1.receive_json() # user2 joined
+            ws2.receive_json() # user2 joined (self)
             
             # 4. User 1 starts game
             ws1.send_json({"type": "start_game"})

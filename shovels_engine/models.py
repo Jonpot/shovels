@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Optional, Union, Dict
 from pydantic import BaseModel, Field
 import random
+import uuid
 
 class Suit(str, Enum):
     CLUBS = "CLUBS"
@@ -10,7 +11,7 @@ class Suit(str, Enum):
     SPADES = "SPADES"
 
 class Card(BaseModel):
-    uid: str
+    uid: str = Field(default_factory=lambda: uuid.uuid4().hex)
     rank: int  # 2-10
     suit: Suit
     is_face: bool = False
@@ -24,7 +25,7 @@ class Card(BaseModel):
         return 10 if self.is_ace else self.rank
 
 class Character(BaseModel):
-    uid: str
+    uid: str = Field(default_factory=lambda: uuid.uuid4().hex)
     rank: str  # J, Q, K
     suit: Suit
     stack: List[Card] = Field(default_factory=list)

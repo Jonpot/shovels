@@ -53,10 +53,10 @@ def test_join_room():
     assert response.status_code == 200
     assert response.json() == {"message": "Joined successfully"}
 
-    # Verify player count
+    # Verify player count (creator + player1)
     response = client.get("/rooms")
     rooms = response.json()
     room = next(r for r in rooms if r["room_id"] == room_id)
-    assert room["player_count"] == 1
+    assert room["player_count"] == 2
     
     app.dependency_overrides.clear()
