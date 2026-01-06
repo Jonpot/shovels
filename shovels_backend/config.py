@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "secret"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    LOCAL_MODE: bool = False  # Set to True to bypass Google OAuth
 
     class Config:
         env_file = os.path.join(os.path.dirname(__file__), ".env")

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 from shovels_backend.manager import GameRoomManager
 from shovels_backend.schemas import RoomCreateRequest, RoomInfoResponse
@@ -9,6 +10,7 @@ from shovels_backend.config import settings
 from shovels_engine import engine
 from typing import List
 import json
+from pydantic import BaseModel
 
 app = FastAPI(title="Shovels API")
 
@@ -29,6 +31,34 @@ room_manager = GameRoomManager()
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/auth/mode")
+def auth_mode():
+    """Returns the current auth mode (local or google)"""
+    return {"mode": "local" if settings.LOCAL_MODE else "google"}
+
+class LocalLoginRequest(BaseModel):
+    name: str
+
+@app.post("/auth/local")
+def local_login(request: LocalLoginRequest):
+    """Local development login - bypasses Google OAuth"""
+    if not settings.LOCAL_MODE:
+        raise HTTPException(status_code=403, detail="Local mode is not enabled")
+
+    # Create a simple user ID from the name
+    user_id = f"local_{request.name.lower().replace(' ', '_')}"
+
+    # Create JWT token
+    access_token = create_access_token(
+        data={
+            "sub": user_id,
+            "email": f"{user_id}@local.dev",
+            "name": request.name
+        }
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # Auth Endpoints
 @app.get("/auth/login")
@@ -58,7 +88,6 @@ async def auth_callback(request: Request):
     
     # Redirect back to frontend
     frontend_url = settings.FRONTEND_URL
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url=f"{frontend_url}/#token={access_token}")
 
 @app.get("/rooms", response_model=List[RoomInfoResponse])

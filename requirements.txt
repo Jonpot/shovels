@@ -1,0 +1,22 @@
+# Shovels Backend Dependencies
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+authlib==1.4.0
+httpx==0.28.1
+itsdangerous==2.2.0
+
+# Data Validation & Settings
+pydantic==2.10.5
+pydantic-settings==2.7.1
+
+# Environment Configuration
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2

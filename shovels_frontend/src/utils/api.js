@@ -37,6 +37,20 @@ export const login = () => {
     window.location.href = `${API_BASE_URL}/auth/login`;
 };
 
+export const getAuthMode = async () => {
+    // Don't use apiRequest here since we need to check auth mode before having a token
+    const response = await fetch(`${API_BASE_URL}/auth/mode`);
+    if (!response.ok) {
+        throw new Error('Failed to get auth mode');
+    }
+    return response.json();
+};
+
+export const localLogin = (name) => apiRequest('/auth/local', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+});
+
 export const getRooms = () => apiRequest('/rooms');
 export const createRoom = (name) => apiRequest('/rooms', {
     method: 'POST',

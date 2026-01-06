@@ -1,11 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LogIn } from 'lucide-react';
 import Button from '../components/Button';
-import { login } from '../utils/api';
+import { login, getAuthMode, localLogin, setAuthToken } from '../utils/api';
 import './LoginPage.css';
 
 const LoginPage = () => {
+    const [authMode, setAuthMode] = useState(null);
+    const [localName, setLocalName] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        getAuthMode().then(data => setAuthMode(data.mode)).catch(() => setAuthMode('google'));
+    }, []);
+
+    const handleLocalLogin = async (e) => {
+        e.preventDefault();
+        if (!localName.trim()) return;
+
+        setLoading(true);
+        try {
+            const data = await localLogin(localName.trim());
+            setAuthToken(data.access_token);
+            window.location.reload();
+        } catch (error) {
+            alert('Login failed: ' + error.message);
+            setLoading(false);
+        }
+    };
+
+    if (authMode === null) {
+        return null; // Loading
+    }
+
     return (
         <div className="login-container">
             <div className="login-overlay" />
@@ -35,14 +62,54 @@ const LoginPage = () => {
                         Sign in to join lobbies, battle friends, and master the art of the dig.
                     </p>
 
-                    <Button
-                        variant="primary"
-                        className="google-login-btn"
-                        onClick={login}
-                    >
-                        <LogIn size={20} className="btn-icon" />
-                        Login with Google
-                    </Button>
+                    {authMode === 'local' ? (
+                        <form onSubmit={handleLocalLogin} style={{ width: '100%' }}>
+                            <input
+                                type="text"
+                                placeholder="Enter your name"
+                                value={localName}
+                                onChange={(e) => setLocalName(e.target.value)}
+                                className="local-name-input"
+                                disabled={loading}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem 1rem',
+                                    marginBottom: '1rem',
+                                    border: '1px solid var(--border-dim)',
+                                    borderRadius: '4px',
+                                    background: 'var(--bg-tertiary)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '1rem',
+                                }}
+                            />
+                            <Button
+                                variant="primary"
+                                type="submit"
+                                disabled={loading || !localName.trim()}
+                                style={{ width: '100%' }}
+                            >
+                                <LogIn size={20} className="btn-icon" />
+                                {loading ? 'Logging in...' : 'Login (Local Mode)'}
+                            </Button>
+                            <p style={{
+                                marginTop: '1rem',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-secondary)',
+                                textAlign: 'center'
+                            }}>
+                                Local development mode - no Google OAuth required
+                            </p>
+                        </form>
+                    ) : (
+                        <Button
+                            variant="primary"
+                            className="google-login-btn"
+                            onClick={login}
+                        >
+                            <LogIn size={20} className="btn-icon" />
+                            Login with Google
+                        </Button>
+                    )}
                 </div>
 
                 <div className="login-footer">

@@ -15,8 +15,7 @@ A Build-&-Battle Card Game.
     # Backend
     python -m venv .venv
     source .venv/bin/activate  # or .\.venv\Scripts\Activate.ps1 on Windows
-    pip install -r requirements.txt # Note: If requirements.txt is missing, install manually:
-    # pip install fastapi uvicorn[standard] python-dotenv python-jose[cryptography] authlib httpx pydantic-settings
+    pip install -r requirements.txt
 
     # Frontend
     cd shovels_frontend
@@ -25,13 +24,23 @@ A Build-&-Battle Card Game.
 
 2.  **Configuration**
 
-    Create `shovels_backend/.env` with your secrets:
-    ```env
+    For local development (no Google OAuth required):
+    ```bash
+    # The .env file is already set up with LOCAL_MODE=true
+    # Just start the servers!
+    ```
+
+    For production (Google OAuth):
+    ```bash
+    # Edit shovels_backend/.env:
+    LOCAL_MODE=false
     JWT_SECRET_KEY=your_secret_key
     GOOGLE_CLIENT_ID=your_google_client_id
     GOOGLE_CLIENT_SECRET=your_google_client_secret
     FRONTEND_URL=http://localhost:5173
     ```
+
+    See [LOCAL_MODE_SETUP.md](LOCAL_MODE_SETUP.md) for detailed local development instructions.
 
 ## Running the App
 

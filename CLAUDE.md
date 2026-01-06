@@ -18,6 +18,9 @@ The game has two distinct phases:
 
 ### Backend
 ```bash
+# First time setup: Install dependencies
+pip install -r requirements.txt
+
 # Activate virtual environment (Windows)
 .\.venv\Scripts\Activate.ps1
 
@@ -139,8 +142,23 @@ python play_cli.py
 ## Configuration
 
 ### Backend Environment (.env in shovels_backend/)
-Required variables:
+
+**Local Development Mode** (no Google OAuth required):
+```bash
+cp shovels_backend/.env.example shovels_backend/.env
+# Edit .env and set LOCAL_MODE=true
 ```
+
+Required variables for local mode:
+```
+LOCAL_MODE=true
+JWT_SECRET_KEY=local-dev-secret-key-change-in-production
+FRONTEND_URL=http://localhost:5173
+```
+
+Required variables for production (Google OAuth):
+```
+LOCAL_MODE=false
 JWT_SECRET_KEY=your_secret_key
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
