@@ -4,7 +4,7 @@ from shovels_engine.engine import (
     draw_cards, discard_card, play_card, 
     perform_action, apply_face_strike, 
     tap_hero_power, resolve_gravedig, buy_card,
-    get_current_player, end_turn
+    end_turn
 )
 
 class Agent:
@@ -161,7 +161,7 @@ class RandomAgent(Agent):
                     indices = random.sample(range(num_pool), min(limit, num_pool))
                     resolve_gravedig(state, player_id, state.active_character_index, indices)
 
-        except Exception as e:
+        except Exception:
             # Fallback
             try:
                 end_turn(state)

@@ -1,12 +1,9 @@
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from authlib.integrations.starlette_client import OAuth
-from starlette.requests import Request
-from dotenv import load_dotenv
 
 from .config import settings
 

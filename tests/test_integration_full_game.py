@@ -4,8 +4,7 @@ from shovels_engine.models import setup_game, Suit
 from shovels_engine.engine import (
     draw_cards, discard_card, play_card, 
     perform_action, apply_face_strike, 
-    tap_hero_power, resolve_gravedig, buy_card, refresh_shop,
-    get_current_player
+    tap_hero_power, resolve_gravedig, buy_card, get_current_player
 )
 
 class TestIntegration(unittest.TestCase):
@@ -191,7 +190,7 @@ class TestIntegration(unittest.TestCase):
                         indices = random.sample(range(num_pool), min(limit, num_pool))
                         resolve_gravedig(state, player.id, state.active_character_index, indices)
 
-            except Exception as e:
+            except Exception:
                 from shovels_engine.engine import end_turn
                 try:
                     end_turn(state)
@@ -201,7 +200,7 @@ class TestIntegration(unittest.TestCase):
         self.assertTrue(state.is_over or turns_played == max_turns)
         if state.is_over:
             self.assertIsNotNone(state.winner_id)
-            print(f'Game log:')
+            print('Game log:')
             for event in state.events:
                 print(f"{event}\n")
             print(f"Game over after {turns_played} turns. Winner: {state.winner_id}")

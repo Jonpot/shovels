@@ -1,6 +1,5 @@
 import unittest
-import json
-from shovels_engine.models import Suit, Card, Character, Player, GameState, initialize_full_pool, setup_game
+from shovels_engine.models import Suit, GameState, initialize_full_pool, setup_game
 
 class TestModels(unittest.TestCase):
     def test_deck_initialization(self):

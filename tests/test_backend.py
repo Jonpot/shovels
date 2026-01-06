@@ -1,10 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from shovels_backend.main import app
 
 client = TestClient(app)
 
-from fastapi import Depends
 from shovels_backend.auth import get_current_user
 
 # Mock user

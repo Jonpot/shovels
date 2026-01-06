@@ -1,5 +1,4 @@
 import sys
-import json
 from shovels_engine.models import setup_game, Suit
 from shovels_engine.engine import (
     draw_cards, discard_card, play_card, 

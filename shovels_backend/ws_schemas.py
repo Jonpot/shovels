@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 
 class WsMessage(BaseModel):
     type: str # "action", "chat", "error", "start_game"

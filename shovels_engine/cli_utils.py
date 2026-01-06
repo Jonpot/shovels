@@ -1,4 +1,4 @@
-from shovels_engine.models import GameState, Suit, Card, Character, Player
+from shovels_engine.models import GameState, Card, Character
 
 def card_to_str(card: Card) -> str:
     if card.is_face:

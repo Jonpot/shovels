@@ -1,5 +1,4 @@
 import pytest
-import json
 from fastapi.testclient import TestClient
 from shovels_backend.main import app
 from shovels_backend.auth import create_access_token, get_current_user

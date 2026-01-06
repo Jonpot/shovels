@@ -1,7 +1,6 @@
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
-from shovels_backend.manager import GameRoom, GameRoomManager
+from unittest.mock import AsyncMock
+from shovels_backend.manager import GameRoomManager
 from fastapi import WebSocket
 
 @pytest.mark.asyncio

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 import random
 import uuid

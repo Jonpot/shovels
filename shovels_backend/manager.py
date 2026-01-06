@@ -1,6 +1,5 @@
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 import uuid
-import json
 from fastapi import WebSocket
 from shovels_engine.models import GameState, setup_game
 

@@ -1,9 +1,7 @@
 import pytest
-from datetime import timedelta
 from jose import jwt
 from shovels_backend.auth import create_access_token, ALGORITHM, SECRET_KEY, get_current_user
 from fastapi import HTTPException
-import asyncio
 
 def test_create_access_token():
     data = {"sub": "user123", "email": "user@example.com"}
