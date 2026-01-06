@@ -169,6 +169,8 @@ def play_card(
             )
             state.discard_pile.append(old_face)
 
+            # Face cards must have face_rank set
+            assert card.face_rank is not None, "Face card must have face_rank"
             player.characters[character_index].uid = card.uid
             player.characters[character_index].rank = card.face_rank
             player.characters[character_index].suit = card.suit
@@ -179,6 +181,8 @@ def play_card(
         ):
             # Create new character
             player.hand.pop(card_index)
+            # Face cards must have face_rank set
+            assert card.face_rank is not None, "Face card must have face_rank"
             new_char = Character(
                 uid=card.uid, rank=card.face_rank, suit=card.suit, stack=[]
             )
@@ -220,6 +224,8 @@ def buy_card(
         raise ValueError("Invalid shop slot")
 
     card = state.shop_row[slot_index]
+    # Type guard: we already checked card is not None above
+    assert card is not None, "Card slot should not be None after validation"
 
     # Calculate effective price
     effective_is_free = is_free or state.free_buys_remaining > 0
@@ -232,6 +238,7 @@ def buy_card(
     char = player.characters[char_index]
     if card.is_face:
         # Face upgrade: J < Q < K
+        assert card.face_rank is not None, "Face card must have face_rank"
         rank_values = {"J": 1, "Q": 2, "K": 3}
         if rank_values[card.face_rank] <= rank_values[char.rank]:
             if effective_is_free:
@@ -247,7 +254,8 @@ def buy_card(
         # Replace face
         old_face = Card(rank=0, suit=char.suit, is_face=True, face_rank=char.rank)
         state.discard_pile.append(old_face)
-        char.rank = card.face_rank
+        # face_rank already asserted above
+        char.rank = card.face_rank  # type: ignore[assignment]
         char.suit = card.suit
         char.is_tapped = False
     else:
@@ -425,6 +433,8 @@ def resolve_gravedig(
         raise ValueError("Must be in GRAVEDIGGING subphase")
 
     player = next((p for p in state.players if p.id == player_id), None)
+    if not player:
+        raise ValueError(f"Player {player_id} not found")
     char = player.characters[char_index]
 
     num_keep = {"J": 1, "Q": 2, "K": 3}[char.rank]

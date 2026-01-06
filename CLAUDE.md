@@ -54,17 +54,26 @@ npm run lint
 
 ### Testing
 ```bash
-# Run all tests
-pytest
+# Run all tests (use PYTHONPATH to ensure modules are found)
+PYTHONPATH=. pytest
 
 # Run specific test file
-pytest tests/test_phase1.py
+PYTHONPATH=. pytest tests/test_phase1.py
 
 # Run with verbose output
-pytest -v
+PYTHONPATH=. pytest -v
 
 # Run specific test by name
-pytest tests/test_phase1.py::test_draw_two_from_deck
+PYTHONPATH=. pytest tests/test_phase1.py::test_draw_two_from_deck
+```
+
+### Code Quality
+```bash
+# Run linter
+ruff check .
+
+# Run type checker
+pyright shovels_backend shovels_engine tests
 ```
 
 ### CLI Tool

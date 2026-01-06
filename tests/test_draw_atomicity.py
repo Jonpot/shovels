@@ -17,7 +17,6 @@ class TestDrawAtomicity(unittest.TestCase):
         """
         self.state.deck = [Card(rank=5, suit=Suit.HEARTS)]
         p1 = self.state.players[0]
-        initial_hand_size = len(p1.hand) # Should be 0 after setup_game if we cleared it, but setup_game gives 3 chars not hand.
         p1.hand = []
         
         with self.assertRaisesRegex(ValueError, "Not enough cards in deck"):

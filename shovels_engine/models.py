@@ -20,7 +20,7 @@ class Card(BaseModel):
 
     @property
     def price(self) -> int:
-        if self.is_face:
+        if self.is_face and self.face_rank:
             return {"J": 3, "Q": 4, "K": 5}[self.face_rank]
         return 10 if self.is_ace else self.rank
 
@@ -44,7 +44,7 @@ class Player(BaseModel):
 class GameState(BaseModel):
     deck: List[Card] = Field(default_factory=list)
     shop_pile: List[Card] = Field(default_factory=list)
-    shop_row: List[Card] = Field(default_factory=list)
+    shop_row: List[Optional[Card]] = Field(default_factory=list)
     discard_pile: List[Card] = Field(default_factory=list)
     players: List[Player] = Field(default_factory=list)
     current_turn_index: int = 0
@@ -99,6 +99,8 @@ def setup_game(player_ids: List[str], player_names: Optional[Dict[str, str]] = N
         p_chars = []
         for _ in range(3):
             fc = face_cards.pop()
+            # Face cards always have face_rank set, but we need to assert for type checker
+            assert fc.face_rank is not None, "Face card must have face_rank"
             p_chars.append(Character(uid=fc.uid, rank=fc.face_rank, suit=fc.suit))
         
         # Use real name if provided, else fallback to generic ID-based name

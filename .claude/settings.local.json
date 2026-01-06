@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(pyright:*)",
+      "Bash(ruff check:*)"
     ]
   }
 }

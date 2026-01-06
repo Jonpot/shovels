@@ -85,7 +85,7 @@ class TestIntegration(unittest.TestCase):
                             try:
                                 perform_action(state, player.id, state.active_character_index, 0, suit, dug_indices=indices, target_info=target_info)
                                 continue # Loop again
-                            except:
+                            except Exception:
                                 from shovels_engine.engine import end_turn
                                 end_turn(state)
                                 continue
@@ -115,7 +115,7 @@ class TestIntegration(unittest.TestCase):
                             try:
                                 tap_hero_power(state, player.id, char_idx, target_info)
                                 continue # Loop again for subphase processing
-                            except:
+                            except Exception:
                                 action_type = "HAND"
                         
                         if action_type == "STRIKE":
@@ -126,7 +126,7 @@ class TestIntegration(unittest.TestCase):
                                 try:
                                     apply_face_strike(state, player.id, char_idx, target_p.id, target_c_idx)
                                     continue # Loop again
-                                except:
+                                except Exception:
                                     action_type = "HAND"
                             else:
                                 action_type = "HAND"
@@ -162,7 +162,7 @@ class TestIntegration(unittest.TestCase):
                             try:
                                 perform_action(state, player.id, char_idx, num_cards, suit, target_info=target_info)
                                 continue # Loop again
-                            except:
+                            except Exception:
                                 from shovels_engine.engine import end_turn
                                 end_turn(state)
 
@@ -176,7 +176,7 @@ class TestIntegration(unittest.TestCase):
                             try:
                                 buy_card(state, player.id, slot, char_idx)
                                 played_in_shop = True
-                            except:
+                            except Exception:
                                 pass
                         
                         if not played_in_shop or (player.coins < 3 and state.turn_subphase == "SHOPPING"):
@@ -184,6 +184,10 @@ class TestIntegration(unittest.TestCase):
                             end_turn(state)
 
                     elif state.turn_subphase == "GRAVEDIGGING":
+                        if state.active_character_index is None:
+                            from shovels_engine.engine import end_turn
+                            end_turn(state)
+                            continue
                         num_pool = len(state.gravedig_pool)
                         char = player.characters[state.active_character_index]
                         limit = {"J": 1, "Q": 2, "K": 3}[char.rank]
@@ -194,7 +198,7 @@ class TestIntegration(unittest.TestCase):
                 from shovels_engine.engine import end_turn
                 try:
                     end_turn(state)
-                except:
+                except Exception:
                     pass
 
         self.assertTrue(state.is_over or turns_played == max_turns)

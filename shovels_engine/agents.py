@@ -101,7 +101,7 @@ class RandomAgent(Agent):
                         try:
                             tap_hero_power(state, player_id, char_idx, target_info)
                             return
-                        except:
+                        except Exception:
                             action_type = "HAND"
                     
                     if action_type == "STRIKE":
@@ -112,7 +112,7 @@ class RandomAgent(Agent):
                             try:
                                 apply_face_strike(state, player_id, char_idx, target_p.id, target_c_idx)
                                 return
-                            except:
+                            except Exception:
                                 action_type = "HAND"
                         else:
                             action_type = "HAND"
@@ -148,13 +148,16 @@ class RandomAgent(Agent):
                         try:
                             buy_card(state, player_id, slot, char_idx)
                             played_in_shop = True
-                        except:
+                        except Exception:
                             pass
                     
                     if not played_in_shop or (player.coins < 3 and state.turn_subphase == "SHOPPING"):
                         end_turn(state)
 
                 elif state.turn_subphase == "GRAVEDIGGING":
+                    if state.active_character_index is None:
+                        end_turn(state)
+                        return
                     num_pool = len(state.gravedig_pool)
                     char = player.characters[state.active_character_index]
                     limit = {"J": 1, "Q": 2, "K": 3}[char.rank]
@@ -165,5 +168,5 @@ class RandomAgent(Agent):
             # Fallback
             try:
                 end_turn(state)
-            except:
+            except Exception:
                 pass

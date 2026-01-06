@@ -65,7 +65,8 @@ class TestShop(unittest.TestCase):
         )
         refresh_shop(state, "p1")
         self.assertEqual(state.players[0].coins, 3)
-        self.assertEqual(state.shop_row[0].rank, 5)
+        self.assertIsNotNone(state.shop_row[0])
+        self.assertEqual(state.shop_row[0].rank, 5)  # type: ignore[union-attr]
         # Discard pile was emptied to refill shop pile
         self.assertEqual(len(state.discard_pile), 0)
 

@@ -1,4 +1,5 @@
 import pytest
+from fastapi import WebSocketDisconnect
 from fastapi.testclient import TestClient
 from shovels_backend.main import app
 from shovels_backend.auth import create_access_token, get_current_user
@@ -12,11 +13,9 @@ def get_mock_user_1():
 def get_mock_user_2():
     return {"id": "user2", "email": "user2@example.com", "name": "User Two"}
 
-from fastapi import WebSocketDisconnect
-
 def test_ws_unauthorized():
     with pytest.raises(WebSocketDisconnect) as excinfo:
-        with client.websocket_connect("/ws/room/test_room?token=invalid") as websocket:
+        with client.websocket_connect("/ws/room/test_room?token=invalid"):
             pass
     assert excinfo.value.code == 4001
 

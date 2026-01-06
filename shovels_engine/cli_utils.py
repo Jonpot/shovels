@@ -80,7 +80,8 @@ def print_bot_summary(state: GameState, player_id: str):
     for e in relevant_events:
         etype = e['event_type']
         data = e['data']
-        if etype == "TURN_START": continue # Skip the start log
+        if etype == "TURN_START":
+            continue  # Skip the start log
         
         if etype == "DRAW":
             print(f"  - Drew {len(data['drawn'])} cards.")

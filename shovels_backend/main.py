@@ -64,12 +64,12 @@ def local_login(request: LocalLoginRequest):
 @app.get("/auth/login")
 async def login(request: Request):
     redirect_uri = request.url_for('auth_callback')
-    return await oauth.google.authorize_redirect(request, str(redirect_uri))
+    return await oauth.google.authorize_redirect(request, str(redirect_uri))  # type: ignore[union-attr]
 
 @app.get("/auth/callback")
 async def auth_callback(request: Request):
     try:
-        token = await oauth.google.authorize_access_token(request)
+        token = await oauth.google.authorize_access_token(request)  # type: ignore[union-attr]
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
     
@@ -166,6 +166,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
                     continue
                 
                 action_data = msg.data
+                if not action_data:
+                    await websocket.send_json({"type": "error", "message": "Invalid action data"})
+                    continue
                 action_type = action_data.get("action_type")
                 params = action_data.get("params", {})
                 
