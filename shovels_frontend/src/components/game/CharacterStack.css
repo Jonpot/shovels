@@ -91,3 +91,85 @@
         transform: scale(1);
     }
 }
+
+/* Phase 2 styles */
+.character-stack-container.selected {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.character-stack-container.targetable {
+    border: 2px dashed #FFA726;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.character-stack-container.targetable:hover {
+    border-color: #FF9800;
+    background: rgba(255, 152, 0, 0.1);
+}
+
+.stacked-card-wrapper.clickable {
+    cursor: pointer;
+    pointer-events: auto !important;
+}
+
+.stacked-card-wrapper.card-selected {
+    outline: 3px solid #2196F3;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.selected-card-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #2196F3;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.tapped-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* Opponent Hidden Character Back */
+.char-back-card {
+    width: 120px;
+    height: 168px;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    border: 2px solid var(--primary-gold);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.char-back-symbol {
+    font-size: 4rem;
+    color: var(--primary-gold);
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}

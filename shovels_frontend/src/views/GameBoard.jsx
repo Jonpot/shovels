@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Trash2, Zap, ArrowUpCircle } from 'lucide-react';
+import { Users, Trash2, Zap, ArrowUpCircle, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import PlayerHand from '../components/game/PlayerHand';
 import CharacterStack from '../components/game/CharacterStack';
 import ShopRow from '../components/game/ShopRow';
@@ -12,6 +12,30 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
     const [selectedHandIndices, setSelectedHandIndices] = useState([]);
     const [pendingDrawSources, setPendingDrawSources] = useState([]);
     const [actionPhase, setActionPhase] = useState(null);
+
+    // Phase 2 Battle state
+    const [selectedCharIndex, setSelectedCharIndex] = useState(null);
+    const [selectedStackIndices, setSelectedStackIndices] = useState([]);
+    const [selectedSuit, setSelectedSuit] = useState(null);
+    const [targetMode, setTargetMode] = useState(null); // 'strike', 'attack', 'buy'
+    const [selectedShopSlot, setSelectedShopSlot] = useState(null);
+    const [selectedTargetPlayer, setSelectedTargetPlayer] = useState(null);
+    const [selectedTargetChar, setSelectedTargetChar] = useState(null);
+
+    // Opponent viewing state
+    const [selectedOpponentId, setSelectedOpponentId] = useState(null); // null = list view, otherwise detailed view
+
+    // Test mode detection
+    const [isTestMode, setIsTestMode] = useState(false);
+    const [autoPlaying, setAutoPlaying] = useState(false);
+
+    // Check if in test mode (local mode)
+    React.useEffect(() => {
+        fetch('http://localhost:8000/auth/mode')
+            .then(res => res.json())
+            .then(data => setIsTestMode(data.mode === 'local'))
+            .catch(() => setIsTestMode(false));
+    }, []);
 
     console.log("[GameBoard] State Update:", { phase: gameState.phase, subphase: gameState.turn_subphase, current_turn: gameState.current_turn_index });
 
@@ -27,7 +51,17 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
         if (gameState.turn_subphase !== "DRAW") {
             setPendingDrawSources([]);
         }
-    }, [gameState.turn_subphase]);
+        // Reset Phase 2 state when subphase changes
+        if (gameState.phase === 2) {
+            setSelectedCharIndex(null);
+            setSelectedStackIndices([]);
+            setSelectedSuit(null);
+            setTargetMode(null);
+            setSelectedShopSlot(null);
+            setSelectedTargetPlayer(null);
+            setSelectedTargetChar(null);
+        }
+    }, [gameState.turn_subphase, gameState.phase]);
 
     // --- Action Handlers ---
 
@@ -106,9 +140,493 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                 }
             });
             setSelectedHandIndices([]);
+        } else if (gameState.phase === 2) {
+            // Phase 2: Select character to act with
+            if (targetMode === 'buy') {
+                // Selecting character to receive bought card
+                if (selectedShopSlot !== null) {
+                    handleBuyCard(selectedShopSlot, charIndex);
+                }
+            } else {
+                setSelectedCharIndex(charIndex);
+                setSelectedStackIndices([]);
+                setSelectedSuit(null);
+            }
         }
-        // ...
     };
+
+    // Phase 2: Stack card multi-select
+    const handleStackCardClick = (charIndex, cardIndex) => {
+        if (gameState.phase !== 2 || selectedCharIndex !== charIndex) return;
+
+        const char = myPlayer.characters[charIndex];
+        const stackLen = char.stack.length;
+
+        // Can ONLY select consecutive cards from the TOP of the stack
+        // Top of stack is at index stackLen - 1
+        // If stackLen = 5, indices are 0,1,2,3,4 where 4 is the top
+
+        if (selectedStackIndices.length === 0) {
+            // First selection must be from the top
+            if (cardIndex !== stackLen - 1) {
+                if (setError) setError("Must start selecting from the top card of the stack");
+                return;
+            }
+            setSelectedStackIndices([cardIndex]);
+        } else {
+            // Can only add the next card down from current selection
+            const currentLowest = Math.min(...selectedStackIndices);
+            const currentHighest = Math.max(...selectedStackIndices);
+
+            // Check if clicking to deselect
+            if (selectedStackIndices.includes(cardIndex)) {
+                // Can only deselect from the bottom of selection (lowest index)
+                if (cardIndex === currentLowest) {
+                    setSelectedStackIndices(selectedStackIndices.filter(i => i !== cardIndex));
+                } else {
+                    if (setError) setError("Can only deselect from the bottom of your selection");
+                }
+                return;
+            }
+
+            // Adding new card - must be exactly one below the current selection
+            if (cardIndex !== currentLowest - 1) {
+                if (setError) setError("Can only select consecutive cards from the top downward");
+                return;
+            }
+
+            // Valid addition
+            setSelectedStackIndices([...selectedStackIndices, cardIndex].sort((a, b) => b - a));
+        }
+    };
+
+    // Phase 2: Tap Hero Power
+    const handleTapHero = () => {
+        if (selectedCharIndex === null) {
+            if (setError) setError("Select a character first");
+            return;
+        }
+
+        const char = myPlayer.characters[selectedCharIndex];
+        if (char.is_tapped) {
+            if (setError) setError("Character is already tapped");
+            return;
+        }
+
+        // Check if needs targets (Clubs)
+        if (char.suit === "CLUBS") {
+            setTargetMode('tap_clubs');
+            if (setError) setError("Now select opponent character(s) to target");
+            return;
+        }
+
+        // Send tap action
+        sendMessage({
+            type: 'action',
+            data: {
+                action_type: 'tap_hero',
+                params: {
+                    char_index: selectedCharIndex,
+                    target_info: null
+                }
+            }
+        });
+        setSelectedCharIndex(null);
+    };
+
+    // Phase 2: Face Strike
+    const handleFaceStrike = () => {
+        if (selectedCharIndex === null) {
+            if (setError) setError("Select a character first");
+            return;
+        }
+
+        setTargetMode('strike');
+        if (setError) setError("Now select an opponent character to strike");
+    };
+
+    // Phase 2: Perform Action (with stack cards)
+    const handlePerformAction = (suit) => {
+        if (selectedCharIndex === null) {
+            if (setError) setError("Select a character first");
+            return;
+        }
+
+        if (selectedStackIndices.length === 0) {
+            if (setError) setError("Select cards from the stack first");
+            return;
+        }
+
+        const selectedCards = selectedStackIndices.map(i => myPlayer.characters[selectedCharIndex].stack[i]);
+        const validSuits = [...new Set(selectedCards.map(c => c.suit))];
+
+        if (!validSuits.includes(suit)) {
+            if (setError) setError(`Selected cards don't contain ${suit}`);
+            return;
+        }
+
+        // Check if needs target (Clubs)
+        if (suit === "CLUBS") {
+            setSelectedSuit(suit);
+            setTargetMode('attack');
+            if (setError) setError("Now select an opponent character to attack");
+            return;
+        }
+
+        // Send action
+        sendMessage({
+            type: 'action',
+            data: {
+                action_type: 'perform_action',
+                params: {
+                    char_index: selectedCharIndex,
+                    top_n_cards: selectedStackIndices.length,
+                    action_suit: suit,
+                    target_info: null
+                }
+            }
+        });
+
+        setSelectedCharIndex(null);
+        setSelectedStackIndices([]);
+    };
+
+    // Phase 2: Buy Card from Shop
+    const handleBuyCard = (slot_index, char_index) => {
+        sendMessage({
+            type: 'action',
+            data: {
+                action_type: 'buy',
+                params: {
+                    slot_index: slot_index,
+                    char_index: char_index
+                }
+            }
+        });
+        setSelectedShopSlot(null);
+        setTargetMode(null);
+    };
+
+    // Navigate between opponents
+    const navigateOpponent = (direction) => {
+        if (!selectedOpponentId) return;
+        const currentIndex = opponents.findIndex(o => o.id === selectedOpponentId);
+        if (currentIndex === -1) return;
+
+        let newIndex;
+        if (direction === 'prev') {
+            newIndex = currentIndex === 0 ? opponents.length - 1 : currentIndex - 1;
+        } else {
+            newIndex = currentIndex === opponents.length - 1 ? 0 : currentIndex + 1;
+        }
+        setSelectedOpponentId(opponents[newIndex].id);
+    };
+
+    // Phase 2: Target opponent character
+    const handleOpponentCharClick = (oppPlayerId, charIndex) => {
+        if (!targetMode) return;
+
+        const targetPlayerId = oppPlayerId;
+
+        if (targetMode === 'strike') {
+            // Face Strike
+            sendMessage({
+                type: 'action',
+                data: {
+                    action_type: 'face_strike',
+                    params: {
+                        char_index: selectedCharIndex,
+                        target_player_id: targetPlayerId,
+                        target_char_index: charIndex
+                    }
+                }
+            });
+            setSelectedCharIndex(null);
+            setTargetMode(null);
+        } else if (targetMode === 'attack') {
+            // Clubs attack
+            sendMessage({
+                type: 'action',
+                data: {
+                    action_type: 'perform_action',
+                    params: {
+                        char_index: selectedCharIndex,
+                        top_n_cards: selectedStackIndices.length,
+                        action_suit: selectedSuit,
+                        target_info: {
+                            target_player_id: targetPlayerId,
+                            target_char_index: charIndex
+                        }
+                    }
+                }
+            });
+            setSelectedCharIndex(null);
+            setSelectedStackIndices([]);
+            setSelectedSuit(null);
+            setTargetMode(null);
+        } else if (targetMode === 'tap_clubs') {
+            // Clubs burst - for now just target one (TODO: multi-target)
+            sendMessage({
+                type: 'action',
+                data: {
+                    action_type: 'tap_hero',
+                    params: {
+                        char_index: selectedCharIndex,
+                        target_info: {
+                            targets: [{
+                                target_player_id: targetPlayerId,
+                                target_char_index: charIndex
+                            }]
+                        }
+                    }
+                }
+            });
+            setSelectedCharIndex(null);
+            setTargetMode(null);
+        }
+    };
+
+    // Phase 2: Check if player has taken an action this turn
+    const hasPlayerActed = () => {
+        // Check gameState.action_taken_this_turn, cards_removed_this_turn, character_tapped_this_turn
+        return gameState.action_taken_this_turn ||
+               gameState.cards_removed_this_turn ||
+               gameState.character_tapped_this_turn;
+    };
+
+    // Phase 2: Check if player CAN act (for forced action rule)
+    const canPlayerAct = () => {
+        if (!myPlayer || !myPlayer.is_alive) return false;
+
+        for (const char of myPlayer.characters) {
+            // Can discard from stack?
+            if (char.stack.length > 0) return true;
+
+            // Can tap hero power?
+            if (!char.is_tapped) return true;
+
+            // Can face strike? (only if character has no stack)
+            if (char.stack.length === 0) {
+                // Check if any opponent has a valid target
+                for (const opp of opponents) {
+                    if (!opp.is_alive) continue;
+                    for (const oppChar of opp.characters) {
+                        // Can strike exposed faces or hearts that would break
+                        if (oppChar.stack.length === 0) return true;
+
+                        const topCard = oppChar.stack[oppChar.stack.length - 1];
+                        if (topCard.suit === 'HEARTS' && (1 >= (topCard.rank + oppChar.shield))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    };
+
+    // Phase 2: End Turn
+    const handleEndTurn = () => {
+        // Enforce forced action rule in BATTLE_ACTION phase
+        if (gameState.turn_subphase === 'BATTLE_ACTION' && !hasPlayerActed()) {
+            if (!canPlayerAct()) {
+                // Player cannot act - they will lose a character (fatigue)
+                // Let the backend handle this
+                sendMessage({
+                    type: 'action',
+                    data: {
+                        action_type: 'end_turn',
+                        params: {}
+                    }
+                });
+            } else {
+                if (setError) setError("You must take an action before ending your turn (discard, tap, or strike)");
+                return;
+            }
+        } else {
+            sendMessage({
+                type: 'action',
+                data: {
+                    action_type: 'end_turn',
+                    params: {}
+                }
+            });
+        }
+    };
+
+    // Test Mode: Auto-play Phase 1
+    const autoPlayPhase1Turn = () => {
+        if (gameState.phase !== 1) {
+            setAutoPlaying(false);
+            return;
+        }
+
+        const currentPlayer = gameState.players[gameState.current_turn_index];
+        if (!currentPlayer || currentPlayer.id !== user.id) {
+            // Not our turn, wait for it
+            return;
+        }
+
+        console.log('[AutoPlay] Playing turn:', gameState.turn_subphase, 'for', currentPlayer.id);
+
+        try {
+            if (gameState.turn_subphase === "DRAW") {
+                    // Determine draw sources
+                    const deckCount = gameState.deck.length;
+                    const discardCount = gameState.discard_pile.length;
+                    let sources = [];
+
+                    if (deckCount >= 2) {
+                        sources = ["DECK", "DECK"];
+                    } else if (deckCount === 1 && discardCount >= 1) {
+                        sources = ["DISCARD", "DECK"]; // Must draw discard first
+                    } else if (deckCount === 0 && discardCount >= 2) {
+                        sources = ["DISCARD", "DISCARD"];
+                    } else if (deckCount === 1 && discardCount === 0) {
+                        sources = ["DECK"];
+                    } else if (deckCount === 0 && discardCount === 1) {
+                        sources = ["DISCARD"];
+                    } else {
+                        // Not enough cards, end turn
+                        sendMessage({
+                            type: 'action',
+                            data: { action_type: 'end_turn', params: {} }
+                        });
+                        return;
+                    }
+
+                    if (sources.length === 2) {
+                        sendMessage({
+                            type: 'action',
+                            data: {
+                                action_type: 'draw',
+                                params: { sources }
+                            }
+                        });
+                    } else {
+                        // Can't draw 2 cards, end turn
+                        sendMessage({
+                            type: 'action',
+                            data: { action_type: 'end_turn', params: {} }
+                        });
+                    }
+                } else if (gameState.turn_subphase === "DISCARD") {
+                    // Discard the lower card
+                    const hand = currentPlayer.hand;
+                    if (hand.length === 0) {
+                        sendMessage({
+                            type: 'action',
+                            data: { action_type: 'end_turn', params: {} }
+                        });
+                        return;
+                    }
+
+                    // Find lower card (by rank, faces are 0)
+                    let lowestIndex = 0;
+                    let lowestValue = hand[0].is_face ? 100 : hand[0].rank; // Faces are valuable, keep them
+
+                    hand.forEach((card, idx) => {
+                        const value = card.is_face ? 100 : card.rank;
+                        if (value < lowestValue) {
+                            lowestValue = value;
+                            lowestIndex = idx;
+                        }
+                    });
+
+                    sendMessage({
+                        type: 'action',
+                        data: {
+                            action_type: 'discard',
+                            params: { card_index: lowestIndex }
+                        }
+                    });
+                } else if (gameState.turn_subphase === "PLAY") {
+                    // Play the remaining card to a random character
+                    const hand = currentPlayer.hand;
+                    if (hand.length === 0) {
+                        sendMessage({
+                            type: 'action',
+                            data: { action_type: 'end_turn', params: {} }
+                        });
+                        return;
+                    }
+
+                    const card = hand[0]; // Should only be 1 card left
+
+                    if (card.is_face) {
+                        // Play face card to random character slot
+                        const availableSlots = [];
+                        for (let i = 0; i < currentPlayer.characters.length; i++) {
+                            availableSlots.push(i);
+                        }
+                        // Can also create new character if under max
+                        if (currentPlayer.characters.length < gameState.max_characters) {
+                            availableSlots.push(currentPlayer.characters.length);
+                        }
+
+                        const randomSlot = availableSlots[Math.floor(Math.random() * availableSlots.length)];
+
+                        sendMessage({
+                            type: 'action',
+                            data: {
+                                action_type: 'play',
+                                params: {
+                                    card_index: 0,
+                                    character_index: randomSlot
+                                }
+                            }
+                        });
+                    } else {
+                        // Number card, play to random existing character
+                        if (currentPlayer.characters.length === 0) {
+                            // No characters to play to, shouldn't happen but handle it
+                            sendMessage({
+                                type: 'action',
+                                data: { action_type: 'end_turn', params: {} }
+                            });
+                            return;
+                        }
+
+                        const randomChar = Math.floor(Math.random() * currentPlayer.characters.length);
+                        sendMessage({
+                            type: 'action',
+                            data: {
+                                action_type: 'play',
+                                params: {
+                                    card_index: 0,
+                                    character_index: randomChar
+                                }
+                            }
+                        });
+                    }
+                }
+        } catch (err) {
+            console.error("[AutoPlay] Error:", err);
+            if (setError) setError(`AutoPlay error: ${err.message}`);
+            setAutoPlaying(false);
+        }
+    };
+
+    // Auto-continue if in auto-play mode
+    React.useEffect(() => {
+        if (!autoPlaying) return;
+
+        if (gameState.phase === 2) {
+            // Phase 1 complete, stop auto-playing
+            setAutoPlaying(false);
+            if (setError) setError("✅ Phase 1 complete! Now entering Phase 2");
+            return;
+        }
+
+        if (gameState.phase === 1 && isMyTurn) {
+            // Small delay to let state settle
+            const timer = setTimeout(() => {
+                autoPlayPhase1Turn();
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [gameState, autoPlaying, isMyTurn]);
 
     const renderPhaseControls = () => {
         if (!isMyTurn) return <div className="turn-indicator">Opponent's Turn</div>;
@@ -140,6 +658,21 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                 Reset
                             </Button>
                         </div>
+                        {isTestMode && !autoPlaying && (
+                            <Button
+                                onClick={() => setAutoPlaying(true)}
+                                variant="ghost"
+                                className="test-mode-btn"
+                                style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}
+                            >
+                                ⚡ Skip Phase 1 (Test Mode)
+                            </Button>
+                        )}
+                        {autoPlaying && (
+                            <div className="auto-playing-indicator">
+                                ⚡ Auto-playing Phase 1...
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -161,6 +694,94 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                         <p>Select card -&gt; Click Character</p>
                         <Button onClick={() => sendMessage({ type: 'action', data: { action_type: 'action', params: {} } })}>
                             End Play / Start Battle
+                        </Button>
+                    </div>
+                );
+            }
+        }
+
+        // Phase 2 Battle Controls
+        if (gameState.phase === 2) {
+            if (gameState.turn_subphase === "BATTLE_ACTION") {
+                const selectedChar = selectedCharIndex !== null ? myPlayer.characters[selectedCharIndex] : null;
+                const selectedCards = selectedChar ? selectedStackIndices.map(i => selectedChar.stack[i]) : [];
+                const availableSuits = selectedCards.length > 0
+                    ? [...new Set(selectedCards.map(c => c.suit))]
+                    : [];
+
+                return (
+                    <div className="phase-controls phase2-battle">
+                        <h3>Battle Phase</h3>
+                        {targetMode ? (
+                            <p className="instruction">🎯 {targetMode === 'strike' ? 'Select opponent character to STRIKE' :
+                                targetMode === 'attack' ? 'Select opponent character to ATTACK' :
+                                'Select opponent character to target'}</p>
+                        ) : selectedChar ? (
+                            <div className="battle-actions">
+                                <p className="selected-char-label">Acting with: {selectedChar.rank} of {selectedChar.suit}</p>
+
+                                {selectedStackIndices.length > 0 && (
+                                    <div className="selected-stack-info">
+                                        <p>{selectedStackIndices.length} card(s) selected</p>
+                                        <div className="suit-buttons">
+                                            {availableSuits.map(suit => (
+                                                <Button
+                                                    key={suit}
+                                                    onClick={() => handlePerformAction(suit)}
+                                                    variant="primary"
+                                                    className={`suit-btn suit-${suit.toLowerCase()}`}
+                                                >
+                                                    {suit === 'CLUBS' ? '♣' : suit === 'DIAMONDS' ? '♦' : suit === 'HEARTS' ? '♥' : '♠'} {suit}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="battle-action-buttons">
+                                    <Button onClick={handleTapHero} disabled={selectedChar.is_tapped} variant="primary">
+                                        <Zap size={16} /> Tap Hero
+                                    </Button>
+                                    {selectedChar.stack.length === 0 && (
+                                        <Button onClick={handleFaceStrike} variant="primary">
+                                            Face Strike
+                                        </Button>
+                                    )}
+                                    <Button onClick={() => setSelectedCharIndex(null)} variant="ghost">
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="instruction">Select a character to act</p>
+                        )}
+
+                        <Button onClick={handleEndTurn} variant="ghost" className="end-turn-btn">
+                            End Turn
+                        </Button>
+                    </div>
+                );
+            } else if (gameState.turn_subphase === "SHOPPING" || gameState.turn_subphase === "SHOP_FREE_BUY") {
+                return (
+                    <div className="phase-controls phase2-shop">
+                        <h3>Shopping Phase</h3>
+                        <p className="instruction">
+                            {targetMode === 'buy'
+                                ? 'Select character to receive card'
+                                : 'Click shop card, then select character'}
+                        </p>
+                        <Button onClick={handleEndTurn} variant="primary">
+                            Done Shopping
+                        </Button>
+                    </div>
+                );
+            } else if (gameState.turn_subphase === "GRAVEDIGGING") {
+                return (
+                    <div className="phase-controls phase2-gravedig">
+                        <h3>Gravedigging</h3>
+                        <p className="instruction">Spades power: Select cards from gravedig pool</p>
+                        <Button onClick={handleEndTurn} variant="primary">
+                            Confirm Selection
                         </Button>
                     </div>
                 );
@@ -210,9 +831,16 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                             <CharacterStack
                                 key={char.uid}
                                 character={char}
+                                charIndex={i}
                                 onStackClick={() => handleCharacterClick(i)}
-                                isTargetable={gameState.turn_subphase === 'PLAY' && selectedHandIndices.length === 1}
-                                isSelected={false}
+                                onCardClick={(cardIndex) => handleStackCardClick(i, cardIndex)}
+                                isTargetable={
+                                    (gameState.turn_subphase === 'PLAY' && selectedHandIndices.length === 1) ||
+                                    (gameState.phase === 2 && (targetMode === 'buy' || !targetMode))
+                                }
+                                isSelected={selectedCharIndex === i}
+                                selectedStackIndices={selectedCharIndex === i ? selectedStackIndices : []}
+                                phase={gameState.phase}
                             />
                         ))}
                     </div>
@@ -266,29 +894,110 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     <ShopRow
                         shopCards={gameState.shop_row || []}
                         coins={myPlayer.coins}
-                        isShoppingPhase={isMyTurn && gameState.turn_subphase === 'SHOPPING'}
-                        onBuyCard={() => { }} // TODO
+                        isShoppingPhase={isMyTurn && (gameState.turn_subphase === 'SHOPPING' || gameState.turn_subphase === 'SHOP_FREE_BUY')}
+                        onBuyCard={(slotIndex) => {
+                            setSelectedShopSlot(slotIndex);
+                            setTargetMode('buy');
+                            if (setError) setError("Now select a character to receive this card");
+                        }}
+                        selectedSlot={selectedShopSlot}
                     />
                 </div>
 
-                {/* Right: Detailed Opponent Info */}
+                {/* Right: Opponent Viewer */}
                 <div className="actions-history-sidebar">
-                    <h3>Opponents</h3>
-                    <div className="opponents-list">
-                        {opponents.map(opp => (
-                            <div key={opp.id} className="opponent-card">
-                                <Users size={16} /> <strong>{opp.name}</strong>
-                                <span>{opp.hand.length} cards</span>
-                                <div className="opp-chars-mini">
-                                    {opp.characters.map((c, i) => (
-                                        <div key={i} className={`mini-status ${c.is_tapped ? 'tapped' : ''}`} title={`${c.rank} of ${c.suit}`}>
-                                            <Card rank={c.rank} suit={c.suit} isFace={true} faceRank={c.rank} className="micro-card" />
+                    {!selectedOpponentId ? (
+                        /* List View */
+                        <>
+                            <h3>Opponents</h3>
+                            <div className="opponents-list">
+                                {opponents.map((opp) => (
+                                    <div
+                                        key={opp.id}
+                                        className="opponent-list-item"
+                                        onClick={() => setSelectedOpponentId(opp.id)}
+                                    >
+                                        <div className="opp-list-header">
+                                            <Users size={16} /> <strong>{opp.name}</strong>
                                         </div>
-                                    ))}
-                                </div>
+                                        <div className="opp-list-stats">
+                                            {opp.hand.length} cards | 🪙 {opp.coins} | {opp.characters.length} chars
+                                        </div>
+                                        <div className="opp-list-chars-preview">
+                                            {opp.characters.map((c, idx) => (
+                                                <div key={idx} className="opp-char-mini">
+                                                    {gameState.phase === 1 ? (
+                                                        <div className="mini-char-back">?</div>
+                                                    ) : (
+                                                        <div className="mini-char-face" title={`${c.rank} of ${c.suit}`}>
+                                                            {c.rank.slice(0, 1)}
+                                                            {c.suit === 'CLUBS' ? '♣' : c.suit === 'DIAMONDS' ? '♦' : c.suit === 'HEARTS' ? '♥' : '♠'}
+                                                        </div>
+                                                    )}
+                                                    {c.stack.length > 0 && (
+                                                        <div className="mini-stack-count">{c.stack.length}</div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    ) : (
+                        /* Detail View - Show selected opponent's characters */
+                        (() => {
+                            const selectedOpp = opponents.find(o => o.id === selectedOpponentId);
+                            if (!selectedOpp) return null;
+
+                            return (
+                                <>
+                                    <div className="opp-detail-header">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setSelectedOpponentId(null)}
+                                            className="opp-back-btn"
+                                        >
+                                            <ArrowLeft size={16} /> Back
+                                        </Button>
+                                        <h3>Opponent - {selectedOpp.name}</h3>
+                                        <div className="opp-nav-arrows">
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => navigateOpponent('prev')}
+                                                className="opp-nav-btn"
+                                            >
+                                                <ChevronLeft size={16} />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={() => navigateOpponent('next')}
+                                                className="opp-nav-btn"
+                                            >
+                                                <ChevronRight size={16} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="opp-detail-stats">
+                                        {selectedOpp.hand.length} cards | 🪙 {selectedOpp.coins}
+                                    </div>
+                                    <div className="characters-scroll-list">
+                                        {selectedOpp.characters.map((char, charIndex) => (
+                                            <CharacterStack
+                                                key={char.uid}
+                                                character={char}
+                                                charIndex={charIndex}
+                                                onStackClick={() => targetMode && handleOpponentCharClick(selectedOpp.id, charIndex)}
+                                                isTargetable={targetMode !== null}
+                                                phase={gameState.phase}
+                                                isOpponent={true}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            );
+                        })()
+                    )}
                 </div>
             </div>
 

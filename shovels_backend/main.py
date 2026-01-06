@@ -184,14 +184,16 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
                         engine.buy_card(room.state, user_data["id"], **params)
                     elif action_type == "refresh":
                         engine.refresh_shop(room.state, user_data["id"])
-                    elif action_type == "tap":
+                    elif action_type == "tap" or action_type == "tap_hero":
                         engine.tap_hero_power(room.state, user_data["id"], **params)
                     elif action_type == "gravedig":
                         engine.resolve_gravedig(room.state, user_data["id"], **params)
-                    elif action_type == "action":
+                    elif action_type == "action" or action_type == "perform_action":
                         engine.perform_action(room.state, user_data["id"], **params)
-                    elif action_type == "strike":
+                    elif action_type == "strike" or action_type == "face_strike":
                         engine.apply_face_strike(room.state, user_data["id"], **params)
+                    elif action_type == "end_turn":
+                        engine.end_turn(room.state)
                     else:
                         await websocket.send_json({"type": "error", "message": f"Unknown action: {action_type}"})
                         continue

@@ -158,6 +158,12 @@ cp shovels_backend/.env.example shovels_backend/.env
 # Edit .env and set LOCAL_MODE=true
 ```
 
+**Test Mode Features:**
+When `LOCAL_MODE=true`, the frontend enables test mode which includes:
+- "Skip Phase 1" button that auto-plays through Phase 1 for all players
+- Auto-play logic: draws 2 cards (handling deck/discard edge cases), discards lower card, plays remaining card to random character
+- Continues until Phase 1 completes (deck empty after equal turns)
+
 Required variables for local mode:
 ```
 LOCAL_MODE=true

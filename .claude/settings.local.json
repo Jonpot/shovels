@@ -3,7 +3,10 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(pyright:*)",
-      "Bash(ruff check:*)"
+      "Bash(ruff check:*)",
+      "Bash(npm run build:*)",
+      "Bash(source .venv/Scripts/activate)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -v)"
     ]
   }
 }

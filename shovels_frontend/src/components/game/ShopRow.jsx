@@ -2,7 +2,7 @@ import React from 'react';
 import Card from '../Card';
 import './ShopRow.css';
 
-const ShopRow = ({ shopCards, coins, onBuyCard, isShoppingPhase }) => {
+const ShopRow = ({ shopCards, coins, onBuyCard, isShoppingPhase, selectedSlot }) => {
     return (
         <div className="shop-row">
             <div className="shop-label">SHOP</div>
@@ -10,8 +10,8 @@ const ShopRow = ({ shopCards, coins, onBuyCard, isShoppingPhase }) => {
                 {shopCards.map((card, index) => (
                     <div
                         key={card ? card.uid : `empty-${index}`}
-                        className={`shop-slot ${card ? 'filled' : 'empty'} ${isShoppingPhase && card && coins >= 3 ? 'buyable' : ''}`}
-                        onClick={() => card && onBuyCard(index)}
+                        className={`shop-slot ${card ? 'filled' : 'empty'} ${isShoppingPhase && card && coins >= 3 ? 'buyable' : ''} ${selectedSlot === index ? 'selected-shop' : ''}`}
+                        onClick={() => card && isShoppingPhase && onBuyCard(index)}
                     >
                         {card ? (
                             <>
