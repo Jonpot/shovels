@@ -202,4 +202,5 @@ Edit `shovels_frontend/src/config.js` to change API URL (defaults to `http://loc
 
 **Docs**:
 - `docs/TechnicalSpecification.md` - Complete game rules reference
-- `Tickets/` - Implementation tickets and task breakdown
+- `Tickets/` - Uncompleted implementation tickets and task breakdown
+- `Tickets/Completed/` - Completed tickets for reference
