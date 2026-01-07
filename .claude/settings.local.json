@@ -6,7 +6,9 @@
       "Bash(ruff check:*)",
       "Bash(npm run build:*)",
       "Bash(source .venv/Scripts/activate)",
-      "Bash(.venv/Scripts/python.exe -m pytest tests/ -v)"
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -v)",
+      "Bash(npm run lint)",
+      "Bash(.venv/Scripts/python.exe:*)"
     ]
   }
 }

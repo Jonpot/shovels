@@ -159,7 +159,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
                     await room.start_game()
                 except Exception as e:
                     await websocket.send_json({"type": "error", "message": f"Could not start game: {str(e)}"})
-            
+
+            elif msg.type == "return_to_lobby":
+                try:
+                    await room.reset_to_lobby()
+                except Exception as e:
+                    await websocket.send_json({"type": "error", "message": f"Could not return to lobby: {str(e)}"})
+
             elif msg.type == "action":
                 if not room.state:
                     await websocket.send_json({"type": "error", "message": "Game not started"})

@@ -30,7 +30,7 @@ class Character(BaseModel):
     suit: Suit
     stack: List[Card] = Field(default_factory=list)
     is_tapped: bool = False
-    shield: int = 0
+    temporary_shield: int = 0  # Shield that expires at end of turn
 
 class Player(BaseModel):
     id: str

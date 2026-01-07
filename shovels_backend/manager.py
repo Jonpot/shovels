@@ -101,6 +101,11 @@ class GameRoom:
         self.state = setup_game(self.player_ids, self.player_names)
         await self.broadcast_state()
 
+    async def reset_to_lobby(self):
+        """Reset the game state and return all players to lobby."""
+        self.state = None
+        await self.broadcast_lobby_state()
+
 class GameRoomManager:
     def __init__(self):
         self.rooms: Dict[str, GameRoom] = {}

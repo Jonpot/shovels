@@ -413,7 +413,8 @@ def tap_hero_power(
 
     elif char.suit == Suit.HEARTS:
         shield_values = {"J": 3, "Q": 5, "K": 10}
-        char.shield += shield_values[char.rank]
+        # All shield is temporary and expires at end of turn
+        char.temporary_shield += shield_values[char.rank]
 
     if (
         is_turn
@@ -590,7 +591,12 @@ def apply_face_strike(
     char_index: int,
     target_player_id: str,
     target_char_index: int,
+    discard_all_cards: bool = False,
 ):
+    """
+    Apply a face strike. If discard_all_cards=True, discard all cards on the character first.
+    This allows striking with a character that has cards by discarding them all in one action.
+    """
     if state.phase != 2:
         raise ValueError("Must be in Phase 2")
 
@@ -608,12 +614,17 @@ def apply_face_strike(
 
     char = player.characters[char_index]
 
+    # If character has cards and we're not discarding them, must be digging
     is_dug = len(state.dug_cards) > 0
-    if len(char.stack) > 0 and not is_dug:
-        raise ValueError("Character must be exposed to strike (unless digging)")
-
-    target_player = next(p for p in state.players if p.id == target_player_id)
-    target_char = target_player.characters[target_char_index]
+    if len(char.stack) > 0:
+        if discard_all_cards:
+            # Discard all cards on this character first
+            while char.stack:
+                card = char.stack.pop()
+                state.discard_pile.append(card)
+                state.cards_removed_this_turn = True
+        elif not is_dug:
+            raise ValueError("Character must be exposed to strike (unless digging or discarding all cards)")
 
     log_event(
         state,
@@ -621,32 +632,11 @@ def apply_face_strike(
         {"target_player_id": target_player_id, "target_char_index": target_char_index},
     )
 
-    removed = False
-    if not target_char.stack:
-        log_event(
-            state,
-            "CHARACTER_DEATH",
-            {
-                "player_id": target_player_id,
-                "character_index": target_char_index,
-                "reason": "STRIKE",
-                "rank": target_char.rank,
-                "suit": target_char.suit,
-            },
-        )
-        target_player.characters.pop(target_char_index)
-        state.cards_removed_this_turn = True
-        removed = True
-        if not target_player.characters:
-            target_player.is_alive = False
-            log_event(
-                state,
-                "PLAYER_DEAD",
-                {"player_id": target_player_id, "reason": "STRIKE"},
-            )
-    else:
-        # Heart protection or other logic
-        pass
+    # Face strike deals 1 damage - can be blocked by heart cards
+    attack_heart(state, player_id, target_player_id, target_char_index, 1)
+
+    # Check if we actually removed a character (for suicide strike logic)
+    removed = state.cards_removed_this_turn
 
     state.action_taken_this_turn = True
     state.active_character_index = char_index
@@ -676,6 +666,7 @@ def apply_face_strike(
                 "PLAYER_DEAD",
                 {"player_id": player_id, "reason": "SUICIDE_STRIKE"},
             )
+            check_win_condition(state)
 
     if not state.dug_cards:
         end_turn(state)
@@ -713,6 +704,7 @@ def attack_heart(
                     "PLAYER_DEAD",
                     {"player_id": target_player_id, "reason": "HEART_OVERWHELM"},
                 )
+                check_win_condition(state)
         return
 
     heart_found = False
@@ -720,7 +712,7 @@ def attack_heart(
         card = target_char.stack[i]
         if card.suit == Suit.HEARTS:
             heart_found = True
-            if damage >= (card.rank + target_char.shield):
+            if damage >= (card.rank + target_char.temporary_shield):
                 num_to_remove = len(target_char.stack) - i
                 for _ in range(num_to_remove):
                     state.discard_pile.append(target_char.stack.pop())
@@ -732,7 +724,7 @@ def attack_heart(
                         "target_player_id": target_player_id,
                         "target_char_index": target_char_index,
                         "damage": damage,
-                        "shield": target_char.shield,
+                        "shield": target_char.temporary_shield,
                     },
                 )
                 break
@@ -759,6 +751,7 @@ def attack_heart(
                 "PLAYER_DEAD",
                 {"player_id": target_player_id, "reason": "HEART_OVERWHELM"},
             )
+            check_win_condition(state)
 
 
 def end_turn(state: GameState):
@@ -789,6 +782,10 @@ def end_turn(state: GameState):
     state.active_character_index = None
     state.gravedig_pool = []
     state.free_buys_remaining = 0
+
+    # Clear temporary shields for all characters
+    for char in player.characters:
+        char.temporary_shield = 0
 
     # Refill Shop Row at end of turn
     refill_shop_row(state)
@@ -880,7 +877,7 @@ def can_player_act(state: GameState, player_id: str) -> bool:
                     # If it has hearts, check if 1 damage would kill it.
                     top_card = other_char.stack[-1]
                     if top_card.suit == Suit.HEARTS and (
-                        1 >= (top_card.rank + other_char.shield)
+                        1 >= (top_card.rank + other_char.temporary_shield)
                     ):
                         return True
 

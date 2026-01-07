@@ -4,6 +4,7 @@ import { Users, Trash2, Zap, ArrowUpCircle, ArrowLeft, ChevronLeft, ChevronRight
 import PlayerHand from '../components/game/PlayerHand';
 import CharacterStack from '../components/game/CharacterStack';
 import ShopRow from '../components/game/ShopRow';
+import VictoryScreen from '../components/game/VictoryScreen';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import './GameBoard.css';
@@ -157,47 +158,29 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
 
     // Phase 2: Stack card multi-select
     const handleStackCardClick = (charIndex, cardIndex) => {
-        if (gameState.phase !== 2 || selectedCharIndex !== charIndex) return;
+        if (gameState.phase !== 2) return;
+
+        // Auto-select character when clicking a card in its stack
+        if (selectedCharIndex !== charIndex) {
+            setSelectedCharIndex(charIndex);
+            setSelectedStackIndices([]);
+            setSelectedSuit(null);
+        }
 
         const char = myPlayer.characters[charIndex];
         const stackLen = char.stack.length;
 
-        // Can ONLY select consecutive cards from the TOP of the stack
+        // Clicking any card selects that card AND all cards above it (to the top)
         // Top of stack is at index stackLen - 1
         // If stackLen = 5, indices are 0,1,2,3,4 where 4 is the top
 
-        if (selectedStackIndices.length === 0) {
-            // First selection must be from the top
-            if (cardIndex !== stackLen - 1) {
-                if (setError) setError("Must start selecting from the top card of the stack");
-                return;
-            }
-            setSelectedStackIndices([cardIndex]);
-        } else {
-            // Can only add the next card down from current selection
-            const currentLowest = Math.min(...selectedStackIndices);
-            const currentHighest = Math.max(...selectedStackIndices);
-
-            // Check if clicking to deselect
-            if (selectedStackIndices.includes(cardIndex)) {
-                // Can only deselect from the bottom of selection (lowest index)
-                if (cardIndex === currentLowest) {
-                    setSelectedStackIndices(selectedStackIndices.filter(i => i !== cardIndex));
-                } else {
-                    if (setError) setError("Can only deselect from the bottom of your selection");
-                }
-                return;
-            }
-
-            // Adding new card - must be exactly one below the current selection
-            if (cardIndex !== currentLowest - 1) {
-                if (setError) setError("Can only select consecutive cards from the top downward");
-                return;
-            }
-
-            // Valid addition
-            setSelectedStackIndices([...selectedStackIndices, cardIndex].sort((a, b) => b - a));
+        // Select all cards from cardIndex to top (stackLen - 1)
+        const selectedRange = [];
+        for (let i = cardIndex; i < stackLen; i++) {
+            selectedRange.push(i);
         }
+
+        setSelectedStackIndices(selectedRange);
     };
 
     // Phase 2: Tap Hero Power
@@ -241,7 +224,10 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             return;
         }
 
-        setTargetMode('strike');
+        const char = myPlayer.characters[selectedCharIndex];
+        const allCardsSelected = selectedStackIndices.length === char.stack.length;
+
+        setTargetMode(allCardsSelected ? 'strike_with_discard' : 'strike');
         if (setError) setError("Now select an opponent character to strike");
     };
 
@@ -328,7 +314,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
 
         const targetPlayerId = oppPlayerId;
 
-        if (targetMode === 'strike') {
+        if (targetMode === 'strike' || targetMode === 'strike_with_discard') {
             // Face Strike
             sendMessage({
                 type: 'action',
@@ -337,11 +323,13 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     params: {
                         char_index: selectedCharIndex,
                         target_player_id: targetPlayerId,
-                        target_char_index: charIndex
+                        target_char_index: charIndex,
+                        discard_all_cards: targetMode === 'strike_with_discard'
                     }
                 }
             });
             setSelectedCharIndex(null);
+            setSelectedStackIndices([]);
             setTargetMode(null);
         } else if (targetMode === 'attack') {
             // Clubs attack
@@ -713,12 +701,17 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     <div className="phase-controls phase2-battle">
                         <h3>Battle Phase</h3>
                         {targetMode ? (
-                            <p className="instruction">🎯 {targetMode === 'strike' ? 'Select opponent character to STRIKE' :
+                            <p className="instruction">🎯 {
+                                targetMode === 'strike' || targetMode === 'strike_with_discard' ? 'Select opponent character to STRIKE' :
                                 targetMode === 'attack' ? 'Select opponent character to ATTACK' :
-                                'Select opponent character to target'}</p>
+                                'Select opponent character to target'
+                            }</p>
                         ) : selectedChar ? (
                             <div className="battle-actions">
-                                <p className="selected-char-label">Acting with: {selectedChar.rank} of {selectedChar.suit}</p>
+                                <p className="selected-char-label">
+                                    Acting with: {selectedChar.rank} of {selectedChar.suit}
+                                    {selectedChar.stack.length > 0 && ` (${selectedChar.stack.length} cards)`}
+                                </p>
 
                                 {selectedStackIndices.length > 0 && (
                                     <div className="selected-stack-info">
@@ -735,6 +728,12 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                                 </Button>
                                             ))}
                                         </div>
+                                        {/* Show face strike if ALL cards are selected */}
+                                        {selectedStackIndices.length === selectedChar.stack.length && (
+                                            <Button onClick={handleFaceStrike} variant="primary" className="face-strike-btn">
+                                                Face Strike (discard all)
+                                            </Button>
+                                        )}
                                     </div>
                                 )}
 
@@ -806,6 +805,15 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Victory Screen */}
+            {gameState.is_over && (
+                <VictoryScreen
+                    gameState={gameState}
+                    user={user}
+                    sendMessage={sendMessage}
+                />
+            )}
 
             {/* Top Bar: Opponents Mini View */}
             <div className="opponents-strip">
@@ -1001,12 +1009,14 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                 </div>
             </div>
 
-            {/* Fixed Bottom: Player Hand */}
-            <PlayerHand
-                hand={myPlayer.hand}
-                selectedIndices={selectedHandIndices}
-                onCardClick={handleCardClick}
-            />
+            {/* Fixed Bottom: Player Hand (only shown in Phase 1) */}
+            {gameState.phase === 1 && (
+                <PlayerHand
+                    hand={myPlayer.hand}
+                    selectedIndices={selectedHandIndices}
+                    onCardClick={handleCardClick}
+                />
+            )}
         </div>
     );
 };
