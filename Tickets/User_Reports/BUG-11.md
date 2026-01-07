@@ -1,0 +1,1 @@
+The game does not currently end. When I am the last remaining player with any characters alive, the game should immediately, announce that I have won the game, and give a button to return to the lobby.

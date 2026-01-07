@@ -1,0 +1,1 @@
+When I am attacked by an opponent using a Club action or a tapped Club Face card, I am unable to tap my Heart Face cards to defend against the attack. The game should allow players who own an untapped heart character that is being attacked to react by tapping their Heart Face cards to add shield value for that attack, as per the official rules.

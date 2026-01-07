@@ -1,0 +1,3 @@
+I am able to tap my Heart Face cards on my turn. This is permitted behavior- it effectively is a no-op and just stalls the game by a turn because tapping a heart face is generally a _reaction_ to being attacked, not an action taken on your own turn. But this behavior is allowed.
+
+Currently, if I perform this behavior, the game assigns a permanent shield to that character- this logic is incorrect, and the shield should be temporary and only last until the end of the current turn. Tapping them as a non-reaction should not provide any effective benefit.
