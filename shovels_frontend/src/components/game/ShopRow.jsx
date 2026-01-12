@@ -2,7 +2,7 @@ import React from 'react';
 import Card from '../Card';
 import './ShopRow.css';
 
-const ShopRow = ({ shopCards, coins, onBuyCard, isShoppingPhase, selectedSlot }) => {
+const ShopRow = ({ shopCards, coins, onBuyCard, onRefreshShop, isShoppingPhase, selectedSlot, freeBuysRemaining }) => {
     const getCardPrice = (card) => {
         if (!card) return 0;
         if (card.is_face && card.face_rank) {
@@ -41,8 +41,25 @@ const ShopRow = ({ shopCards, coins, onBuyCard, isShoppingPhase, selectedSlot })
                     );
                 })}
             </div>
-            <div className="coin-display">
-                <span className="coin-icon">🪙</span> {coins}
+            <div className="shop-controls">
+                {isShoppingPhase && freeBuysRemaining !== undefined && freeBuysRemaining > 0 && (
+                    <div className="free-buys-indicator">
+                        Free Purchases Remaining: {freeBuysRemaining}
+                    </div>
+                )}
+                {isShoppingPhase && !freeBuysRemaining && onRefreshShop && (
+                    <button
+                        className="refresh-shop-button"
+                        onClick={onRefreshShop}
+                        disabled={coins < 2}
+                        title={coins < 2 ? "Need 2 coins to refresh" : "Refresh shop for 2 coins"}
+                    >
+                        Refresh Shop (2 🪙)
+                    </button>
+                )}
+                <div className="coin-display">
+                    <span className="coin-icon">🪙</span> {coins}
+                </div>
             </div>
         </div>
     );

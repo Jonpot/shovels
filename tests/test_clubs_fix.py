@@ -26,9 +26,10 @@ class TestClubsFix(unittest.TestCase):
         # p1 attacks p2's ONLY character
         # Damage 7 (greater than 1)
         attack_heart(self.state, "p1", "p2", 0, 7)
-        
-        # Verify character 0 is removed
-        self.assertEqual(len(p2.characters), 0)
+
+        # FIX-6: Character is marked dead but remains in slot
+        self.assertEqual(len(p2.characters), 1)
+        self.assertTrue(p2.characters[0].is_dead)
         self.assertFalse(p2.is_alive)
         
         # Verify events

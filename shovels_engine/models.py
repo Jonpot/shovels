@@ -26,11 +26,13 @@ class Card(BaseModel):
 
 class Character(BaseModel):
     uid: str = Field(default_factory=lambda: uuid.uuid4().hex)
-    rank: str  # J, Q, K
+    rank: str  # J, Q, K (or "" when dead)
     suit: Suit
     stack: List[Card] = Field(default_factory=list)
     is_tapped: bool = False
     temporary_shield: int = 0  # Shield that expires at end of turn
+    is_dead: bool = False  # True when character dies, slot remains for Jack revival
+    dug_cards: List[Card] = Field(default_factory=list)  # FIX-5: Cards flagged for gravedigging
 
 class Player(BaseModel):
     id: str

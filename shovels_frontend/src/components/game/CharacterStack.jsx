@@ -67,6 +67,26 @@ const CharacterStack = ({
     // Show hidden card back for opponent characters in Phase 1
     const showHidden = isOpponent && phase === 1;
 
+    // Handle dead characters (FIX-6)
+    if (character.is_dead) {
+        return (
+            <motion.div
+                ref={containerRef}
+                className={`character-stack-container dead-character ${isTargetable ? 'targetable' : ''} ${isSelected ? 'selected' : ''}`}
+                onClick={onStackClick}
+            >
+                <div className="character-base">
+                    <div className="character-card dead" style={{ zIndex: 1 }}>
+                        <div className="dead-char-placeholder">
+                            <div className="skull-icon">💀</div>
+                            <div className="dead-label">Empty Slot</div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div
             ref={containerRef}
@@ -101,10 +121,12 @@ const CharacterStack = ({
                 >
                     {character.stack.map((card, i) => {
                         const isCardSelected = selectedStackIndices.includes(i);
+                        // FIX-5: Check if card is dug (available for gravedigging)
+                        const isDugCard = character.dug_cards && character.dug_cards.some(dc => dc.uid === card.uid);
                         return (
                             <motion.div
                                 key={card.uid}
-                                className={`stacked-card-wrapper ${isCardSelected ? 'card-selected' : ''} ${phase === 2 && isSelected ? 'clickable' : ''}`}
+                                className={`stacked-card-wrapper ${isCardSelected ? 'card-selected' : ''} ${isDugCard ? 'dug-card' : ''} ${phase === 2 && isSelected ? 'clickable' : ''}`}
                                 style={{
                                     zIndex: i + 2,
                                     top: `${(i + 1) * 20}px`,

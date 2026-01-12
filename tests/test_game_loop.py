@@ -55,7 +55,9 @@ class TestGameLoop(unittest.TestCase):
         # P1 cannot act, so fatigue should trigger immediately in end_turn (which calls apply_fatigue)
         self.assertEqual(state.current_turn_index, 1) # Should be back to P2 if P1 died
         self.assertFalse(p1.is_alive)
-        self.assertEqual(len(p1.characters), 0)
+        # FIX-6: Character remains but is marked dead
+        self.assertEqual(len(p1.characters), 1)
+        self.assertTrue(p1.characters[0].is_dead)
         self.assertEqual(state.winner_id, "p2")
         self.assertTrue(state.is_over)
 

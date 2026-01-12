@@ -25,7 +25,10 @@ class TestHeroPowers(unittest.TestCase):
         })
         
         self.assertTrue(p1.characters[0].is_tapped)
-        self.assertEqual(len(p2.characters), 0) # Both should be dead
+        # FIX-6: Characters remain but are marked dead
+        self.assertEqual(len(p2.characters), 2)
+        self.assertTrue(p2.characters[0].is_dead)
+        self.assertTrue(p2.characters[1].is_dead)
         self.assertFalse(p2.is_alive)
 
     def test_diamonds_free_buy(self):
@@ -46,7 +49,9 @@ class TestHeroPowers(unittest.TestCase):
         buy_card(state, "p1", 0, 0)
         self.assertEqual(len(p1.characters[0].stack), 1)
         self.assertEqual(state.free_buys_remaining, 0)
-        self.assertIsNone(state.shop_row[0])
+        # FIX-7: After free buys are used, turn ends automatically
+        # Shop is refilled and turn moves to next player
+        self.assertIsNotNone(state.shop_row[0])  # Shop refilled
 
     def test_spades_gravedig(self):
         p1 = Player(id="p1", name="P1", characters=[
@@ -81,14 +86,14 @@ class TestHeroPowers(unittest.TestCase):
         
         # P2 uses power out of turn
         tap_hero_power(state, "p2", 0)
-        self.assertEqual(p2.characters[0].shield, 3)
+        self.assertEqual(p2.characters[0].temporary_shield, 3)
         self.assertTrue(p2.characters[0].is_tapped)
         self.assertEqual(state.current_turn_index, 0) # Still P1's turn
 
     def test_shield_protection(self):
         p1 = Player(id="p1", name="P1", characters=[Character(rank="J", suit=Suit.CLUBS)])
         p2 = Player(id="p2", name="P2", characters=[
-            Character(rank="J", suit=Suit.HEARTS, stack=[Card(rank=8, suit=Suit.HEARTS)], shield=3)
+            Character(rank="J", suit=Suit.HEARTS, stack=[Card(rank=8, suit=Suit.HEARTS)], temporary_shield=3)
         ])
         state = GameState(players=[p1, p2], phase=2, current_turn_index=0)
         

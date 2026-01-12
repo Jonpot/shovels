@@ -121,6 +121,19 @@
     border-radius: 4px;
 }
 
+/* FIX-5: Dug cards (available for gravedigging) */
+.stacked-card-wrapper.dug-card {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+}
+
+.stacked-card-wrapper.dug-card.card-selected {
+    outline: 3px solid #2196F3;
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.6);
+}
+
 .selected-card-overlay {
     position: absolute;
     top: 0;
@@ -172,4 +185,46 @@
     color: var(--primary-gold);
     font-weight: bold;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Dead Character Placeholder (FIX-6) */
+.character-stack-container.dead-character {
+    opacity: 0.7;
+}
+
+.dead-char-placeholder {
+    width: 120px;
+    height: 168px;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border: 2px dashed #666;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.skull-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    filter: grayscale(1);
+}
+
+.dead-label {
+    color: #888;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.character-stack-container.dead-character.targetable {
+    opacity: 1;
+    border: 2px solid #4CAF50;
+}
+
+.character-stack-container.dead-character.targetable:hover {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: #66BB6A;
 }

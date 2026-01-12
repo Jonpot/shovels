@@ -46,13 +46,14 @@ class TestPhase2(unittest.TestCase):
         ])
         state = GameState(players=[p1], phase=2, turn_subphase="BATTLE_ACTION")
         perform_action(state, "p1", 0, 1, Suit.SPADES)
-        self.assertEqual(len(state.dug_cards), 1)
-        self.assertEqual(state.dug_cards[0].rank, 5)
+        # FIX-5: dug_cards are now per-character
+        self.assertEqual(len(p1.characters[0].dug_cards), 1)
+        self.assertEqual(p1.characters[0].dug_cards[0].rank, 5)
         self.assertEqual(state.current_turn_index, 0)
         perform_action(state, "p1", None, 0, Suit.DIAMONDS, dug_indices=[0])
         self.assertEqual(p1.coins, 5)
         self.assertEqual(state.turn_subphase, "SHOPPING")
-        self.assertEqual(len(state.dug_cards), 0)
+        self.assertEqual(len(p1.characters[0].dug_cards), 0)
 
     def test_face_strike_suicide(self):
         p1 = Player(id="p1", name="P1", characters=[Character(rank="J", suit=Suit.CLUBS, stack=[])])
@@ -62,7 +63,9 @@ class TestPhase2(unittest.TestCase):
         state = GameState(players=[p1, p2], phase=2, turn_subphase="BATTLE_ACTION", current_turn_index=0)
         apply_face_strike(state, "p1", 0, "p2", 0)
         p1_state = state.players[0]
-        self.assertEqual(len(p1_state.characters), 0)
+        # FIX-6: Character remains but is marked dead
+        self.assertEqual(len(p1_state.characters), 1)
+        self.assertTrue(p1_state.characters[0].is_dead)
         self.assertFalse(p1_state.is_alive)
 
     def test_must_act_rule(self):
@@ -70,7 +73,9 @@ class TestPhase2(unittest.TestCase):
         state = GameState(players=[p1], phase=2, turn_subphase="BATTLE_ACTION", current_turn_index=0)
         end_turn(state)
         p1_state = state.players[0]
-        self.assertEqual(len(p1_state.characters), 0)
+        # FIX-6: Character remains but is marked dead
+        self.assertEqual(len(p1_state.characters), 1)
+        self.assertTrue(p1_state.characters[0].is_dead)
         self.assertFalse(p1_state.is_alive)
 
     def test_spade_dig_character_consistency(self):
@@ -87,17 +92,17 @@ class TestPhase2(unittest.TestCase):
         # Dig with character 0
         perform_action(state, "p1", 0, 1, Suit.SPADES)
         self.assertEqual(state.active_character_index, 0)
-        self.assertEqual(len(state.dug_cards), 2)
-        
+        # FIX-5: dug_cards are now per-character
+        self.assertEqual(len(p1.characters[0].dug_cards), 2)
+
         # Try to use character 1 for next action -> Should fail
         with self.assertRaisesRegex(ValueError, "Recursive actions must use the same character"):
             perform_action(state, "p1", 1, 0, Suit.DIAMONDS, dug_indices=[0])
         
         # Correctly use character 0 (or None)
-        # Use a Diamond in the hand for the second action
-        state.dug_cards = [Card(rank=5, suit=Suit.DIAMONDS)]
+        # FIX-5: Use a Diamond from dug_cards (index 0 = Card(rank=10, suit=Suit.DIAMONDS))
         perform_action(state, "p1", 0, 0, Suit.DIAMONDS, dug_indices=[0])
-        self.assertEqual(p1.coins, 5)
+        self.assertEqual(p1.coins, 10)
         self.assertEqual(state.turn_subphase, "SHOPPING")
 
     def test_clubs_direct_face_kill(self):
@@ -115,9 +120,11 @@ class TestPhase2(unittest.TestCase):
             'target_player_id': "p2",
             'target_char_index': 0
         })
-        
+
         p2_state = state.players[1]
-        self.assertEqual(len(p2_state.characters), 0)
+        # FIX-6: Character is marked dead but remains
+        self.assertEqual(len(p2_state.characters), 1)
+        self.assertTrue(p2_state.characters[0].is_dead)
         self.assertFalse(p2_state.is_alive)
 
     def test_spade_dig_to_face_strike(self):
@@ -135,13 +142,17 @@ class TestPhase2(unittest.TestCase):
         
         # Dig with Spade
         perform_action(state, "p1", 0, 1, Suit.SPADES)
-        # Card(2, Spades) was popped for action. Card(5, Hearts) was dug. Stack is now empty.
-        self.assertEqual(len(p1.characters[0].stack), 0)
-        
+        # FIX-5: Card(2, Spades) was popped for action. Card(5, Hearts) is flagged as dug but remains on stack.
+        self.assertEqual(len(p1.characters[0].stack), 1)
+        self.assertEqual(len(p1.characters[0].dug_cards), 1)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+
         # Now apply face strike (allowed because we are digging)
         apply_face_strike(state, "p1", 0, "p2", 0)
         p2_state = state.players[1]
-        self.assertEqual(len(p2_state.characters), 0)
+        # FIX-6: Character is marked dead but remains
+        self.assertEqual(len(p2_state.characters), 1)
+        self.assertTrue(p2_state.characters[0].is_dead)
 
     def test_face_strike_suicide_prevention(self):
         """Failed Face Strike doesn't suicide if cards were removed by digging earlier."""

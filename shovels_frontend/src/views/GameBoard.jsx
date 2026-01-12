@@ -52,8 +52,8 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
         if (gameState.turn_subphase !== "DRAW") {
             setPendingDrawSources([]);
         }
-        // Reset Phase 2 state when subphase changes
-        if (gameState.phase === 2) {
+        // Reset Phase 2 state when subphase changes (except when entering GRAVEDIGGING)
+        if (gameState.phase === 2 && gameState.turn_subphase !== "GRAVEDIGGING") {
             setSelectedCharIndex(null);
             setSelectedStackIndices([]);
             setSelectedSuit(null);
@@ -62,7 +62,14 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             setSelectedTargetPlayer(null);
             setSelectedTargetChar(null);
         }
-    }, [gameState.turn_subphase, gameState.phase]);
+        // When entering GRAVEDIGGING, set character to active_character_index
+        if (gameState.phase === 2 && gameState.turn_subphase === "GRAVEDIGGING" && gameState.active_character_index !== null) {
+            setSelectedCharIndex(gameState.active_character_index);
+            setSelectedStackIndices([]);
+            setSelectedSuit(null);
+            setTargetMode(null);
+        }
+    }, [gameState.turn_subphase, gameState.phase, gameState.active_character_index]);
 
     // --- Action Handlers ---
 
@@ -143,6 +150,25 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             setSelectedHandIndices([]);
         } else if (gameState.phase === 2) {
             // Phase 2: Select character to act with
+            const char = myPlayer.characters[charIndex];
+
+            // FIX-6: Prevent selecting dead characters (unless buying a Jack)
+            if (char.is_dead) {
+                if (targetMode === 'buy') {
+                    // Check if the selected shop card is a Jack
+                    const shopCard = gameState.shop_row[selectedShopSlot];
+                    if (shopCard && shopCard.is_face && shopCard.face_rank === 'J') {
+                        // Allowed: buying Jack to revive dead character
+                        handleBuyCard(selectedShopSlot, charIndex);
+                    } else {
+                        if (setError) setError("Can only buy Jacks to empty slots");
+                    }
+                } else {
+                    if (setError) setError("Cannot select empty character slot");
+                }
+                return;
+            }
+
             if (targetMode === 'buy') {
                 // Selecting character to receive bought card
                 if (selectedShopSlot !== null) {
@@ -170,17 +196,36 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
         const char = myPlayer.characters[charIndex];
         const stackLen = char.stack.length;
 
-        // Clicking any card selects that card AND all cards above it (to the top)
-        // Top of stack is at index stackLen - 1
-        // If stackLen = 5, indices are 0,1,2,3,4 where 4 is the top
+        // FIX-5: In GRAVEDIGGING mode, allow individual card selection
+        if (gameState.turn_subphase === "GRAVEDIGGING") {
+            // Check if this card is in dug_cards
+            const card = char.stack[cardIndex];
+            const isDugCard = char.dug_cards && char.dug_cards.some(dc => dc.uid === card.uid);
 
-        // Select all cards from cardIndex to top (stackLen - 1)
-        const selectedRange = [];
-        for (let i = cardIndex; i < stackLen; i++) {
-            selectedRange.push(i);
+            if (!isDugCard) {
+                if (setError) setError("Can only select dug cards during gravedigging");
+                return;
+            }
+
+            // Toggle selection of this individual card
+            if (selectedStackIndices.includes(cardIndex)) {
+                setSelectedStackIndices(selectedStackIndices.filter(i => i !== cardIndex));
+            } else {
+                setSelectedStackIndices([...selectedStackIndices, cardIndex]);
+            }
+        } else {
+            // Normal mode: Clicking any card selects that card AND all cards above it (to the top)
+            // Top of stack is at index stackLen - 1
+            // If stackLen = 5, indices are 0,1,2,3,4 where 4 is the top
+
+            // Select all cards from cardIndex to top (stackLen - 1)
+            const selectedRange = [];
+            for (let i = cardIndex; i < stackLen; i++) {
+                selectedRange.push(i);
+            }
+
+            setSelectedStackIndices(selectedRange);
         }
-
-        setSelectedStackIndices(selectedRange);
     };
 
     // Phase 2: Tap Hero Power
@@ -259,17 +304,42 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             return;
         }
 
-        // Send action
+        // FIX-5: Send dug_indices when in GRAVEDIGGING mode
+        const char = myPlayer.characters[selectedCharIndex];
+        let params;
+
+        if (gameState.turn_subphase === "GRAVEDIGGING") {
+            // Convert selectedStackIndices to dug_indices
+            const dugIndices = [];
+            selectedStackIndices.forEach(stackIdx => {
+                const card = char.stack[stackIdx];
+                const dugIdx = char.dug_cards.findIndex(dc => dc.uid === card.uid);
+                if (dugIdx !== -1) {
+                    dugIndices.push(dugIdx);
+                }
+            });
+
+            params = {
+                char_index: selectedCharIndex,
+                top_n_cards: 0,  // Not used in GRAVEDIGGING
+                action_suit: suit,
+                dug_indices: dugIndices,
+                target_info: null
+            };
+        } else {
+            params = {
+                char_index: selectedCharIndex,
+                top_n_cards: selectedStackIndices.length,
+                action_suit: suit,
+                target_info: null
+            };
+        }
+
         sendMessage({
             type: 'action',
             data: {
                 action_type: 'perform_action',
-                params: {
-                    char_index: selectedCharIndex,
-                    top_n_cards: selectedStackIndices.length,
-                    action_suit: suit,
-                    target_info: null
-                }
+                params: params
             }
         });
 
@@ -312,6 +382,16 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
     const handleOpponentCharClick = (oppPlayerId, charIndex) => {
         if (!targetMode) return;
 
+        // FIX-6: Prevent targeting dead characters
+        const targetPlayer = opponents.find(o => o.id === oppPlayerId);
+        if (targetPlayer) {
+            const targetChar = targetPlayer.characters[charIndex];
+            if (targetChar && targetChar.is_dead) {
+                if (setError) setError("Cannot target empty character slot");
+                return;
+            }
+        }
+
         const targetPlayerId = oppPlayerId;
 
         if (targetMode === 'strike' || targetMode === 'strike_with_discard') {
@@ -332,20 +412,48 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             setSelectedStackIndices([]);
             setTargetMode(null);
         } else if (targetMode === 'attack') {
-            // Clubs attack
+            // FIX-5: Clubs attack - handle GRAVEDIGGING mode
+            const char = myPlayer.characters[selectedCharIndex];
+            let params;
+
+            if (gameState.turn_subphase === "GRAVEDIGGING") {
+                // Convert selectedStackIndices to dug_indices
+                const dugIndices = [];
+                selectedStackIndices.forEach(stackIdx => {
+                    const card = char.stack[stackIdx];
+                    const dugIdx = char.dug_cards.findIndex(dc => dc.uid === card.uid);
+                    if (dugIdx !== -1) {
+                        dugIndices.push(dugIdx);
+                    }
+                });
+
+                params = {
+                    char_index: selectedCharIndex,
+                    top_n_cards: 0,  // Not used in GRAVEDIGGING
+                    action_suit: selectedSuit,
+                    dug_indices: dugIndices,
+                    target_info: {
+                        target_player_id: targetPlayerId,
+                        target_char_index: charIndex
+                    }
+                };
+            } else {
+                params = {
+                    char_index: selectedCharIndex,
+                    top_n_cards: selectedStackIndices.length,
+                    action_suit: selectedSuit,
+                    target_info: {
+                        target_player_id: targetPlayerId,
+                        target_char_index: charIndex
+                    }
+                };
+            }
+
             sendMessage({
                 type: 'action',
                 data: {
                     action_type: 'perform_action',
-                    params: {
-                        char_index: selectedCharIndex,
-                        top_n_cards: selectedStackIndices.length,
-                        action_suit: selectedSuit,
-                        target_info: {
-                            target_player_id: targetPlayerId,
-                            target_char_index: charIndex
-                        }
-                    }
+                    params: params
                 }
             });
             setSelectedCharIndex(null);
@@ -775,13 +883,68 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     </div>
                 );
             } else if (gameState.turn_subphase === "GRAVEDIGGING") {
+                const selectedChar = selectedCharIndex !== null ? myPlayer.characters[selectedCharIndex] : null;
+                const selectedCards = selectedChar && selectedStackIndices.length > 0
+                    ? selectedStackIndices.map(i => selectedChar.stack[i])
+                    : [];
+                const availableSuits = selectedCards.length > 0
+                    ? [...new Set(selectedCards.map(c => c.suit))]
+                    : [];
+
+                // Check if all cards in stack are dug (face exposed)
+                const allCardsDug = selectedChar && selectedChar.dug_cards &&
+                    selectedChar.dug_cards.length === selectedChar.stack.length;
+
                 return (
                     <div className="phase-controls phase2-gravedig">
                         <h3>Gravedigging</h3>
-                        <p className="instruction">Spades power: Select cards from gravedig pool</p>
-                        <Button onClick={handleEndTurn} variant="primary">
-                            Confirm Selection
-                        </Button>
+                        {targetMode ? (
+                            <p className="instruction">🎯 {
+                                targetMode === 'strike' || targetMode === 'strike_with_discard' ? 'Select opponent character to STRIKE' :
+                                targetMode === 'attack' ? 'Select opponent character to ATTACK' :
+                                'Select opponent character to target'
+                            }</p>
+                        ) : selectedChar ? (
+                            <div className="gravedig-actions">
+                                <p className="selected-char-label">
+                                    Acting with: {selectedChar.rank} of {selectedChar.suit}
+                                    <br />
+                                    ({selectedChar.dug_cards.length} dug cards available)
+                                </p>
+
+                                {selectedStackIndices.length > 0 ? (
+                                    <div className="selected-stack-info">
+                                        <p>{selectedStackIndices.length} dug card(s) selected</p>
+                                        <div className="suit-buttons">
+                                            {availableSuits.map(suit => (
+                                                <Button
+                                                    key={suit}
+                                                    onClick={() => handlePerformAction(suit)}
+                                                    variant="primary"
+                                                    className={`suit-btn suit-${suit.toLowerCase()}`}
+                                                >
+                                                    {suit === 'CLUBS' ? '♣' : suit === 'DIAMONDS' ? '♦' : suit === 'HEARTS' ? '♥' : '♠'} {suit}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="instruction">Select dug cards (green border) from the stack</p>
+                                )}
+
+                                {allCardsDug && (
+                                    <Button onClick={handleFaceStrike} variant="primary" className="face-strike-btn">
+                                        Face Strike
+                                    </Button>
+                                )}
+
+                                <Button onClick={handleEndTurn} variant="ghost" className="end-turn-btn">
+                                    End Turn
+                                </Button>
+                            </div>
+                        ) : (
+                            <p className="instruction">ERROR: No character selected in GRAVEDIGGING</p>
+                        )}
                     </div>
                 );
             }
@@ -908,7 +1071,17 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                             setTargetMode('buy');
                             if (setError) setError("Now select a character to receive this card");
                         }}
+                        onRefreshShop={() => {
+                            sendMessage({
+                                type: 'action',
+                                data: {
+                                    action_type: 'refresh',
+                                    params: {}
+                                }
+                            });
+                        }}
                         selectedSlot={selectedShopSlot}
+                        freeBuysRemaining={gameState.free_buys_remaining}
                     />
                 </div>
 
@@ -995,8 +1168,8 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                                 key={char.uid}
                                                 character={char}
                                                 charIndex={charIndex}
-                                                onStackClick={() => targetMode && handleOpponentCharClick(selectedOpp.id, charIndex)}
-                                                isTargetable={targetMode !== null}
+                                                onStackClick={() => targetMode && !char.is_dead && handleOpponentCharClick(selectedOpp.id, charIndex)}
+                                                isTargetable={targetMode !== null && !char.is_dead}
                                                 phase={gameState.phase}
                                                 isOpponent={true}
                                             />

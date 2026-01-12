@@ -240,26 +240,49 @@ def buy_card(
         # Face upgrade: J < Q < K
         assert card.face_rank is not None, "Face card must have face_rank"
         rank_values = {"J": 1, "Q": 2, "K": 3}
-        if rank_values[card.face_rank] <= rank_values[char.rank]:
-            if effective_is_free:
-                # Discard invalid free buy
-                state.discard_pile.append(card)
-                state.shop_row[slot_index] = None
-                if state.free_buys_remaining > 0:
-                    state.free_buys_remaining -= 1
-                return
-            else:
-                raise ValueError(f"Cannot upgrade {char.rank} with {card.face_rank}")
 
-        # Replace face
-        old_face = Card(rank=0, suit=char.suit, is_face=True, face_rank=char.rank)
-        state.discard_pile.append(old_face)
-        # face_rank already asserted above
-        char.rank = card.face_rank  # type: ignore[assignment]
-        char.suit = card.suit
-        char.is_tapped = False
+        # Handle dead character revival (FIX-6)
+        if char.is_dead:
+            if card.face_rank != "J":
+                if effective_is_free:
+                    # Discard invalid free buy
+                    state.discard_pile.append(card)
+                    state.shop_row[slot_index] = None
+                    if state.free_buys_remaining > 0:
+                        state.free_buys_remaining -= 1
+                    return
+                else:
+                    raise ValueError("Can only revive dead characters with Jack")
+            # Revive with Jack
+            char.is_dead = False
+            char.rank = "J"
+            char.suit = card.suit
+            char.is_tapped = False
+            char.stack = []
+        else:
+            # Normal upgrade rules (Phase 2: upgrade only)
+            if rank_values[card.face_rank] <= rank_values[char.rank]:
+                if effective_is_free:
+                    # Discard invalid free buy
+                    state.discard_pile.append(card)
+                    state.shop_row[slot_index] = None
+                    if state.free_buys_remaining > 0:
+                        state.free_buys_remaining -= 1
+                    return
+                else:
+                    raise ValueError(f"Cannot upgrade {char.rank} with {card.face_rank}")
+
+            # Replace face
+            old_face = Card(rank=0, suit=char.suit, is_face=True, face_rank=char.rank)
+            state.discard_pile.append(old_face)
+            # face_rank already asserted above
+            char.rank = card.face_rank  # type: ignore[assignment]
+            char.suit = card.suit
+            char.is_tapped = False
     else:
-        # Number card to stack
+        # Number card to stack (can't add to dead character)
+        if char.is_dead:
+            raise ValueError("Cannot add cards to dead character")
         char.stack.append(card)
 
     player.coins -= price
@@ -278,6 +301,12 @@ def buy_card(
             "price": price,
         },
     )
+
+    # Auto-exit shop after free purchases are depleted (FIX-7)
+    if state.turn_subphase == "SHOP_FREE_BUY" and state.free_buys_remaining == 0:
+        # FIX-7: Tap hero power IS your turn, so end turn after free buys
+        refill_shop_row(state)
+        end_turn(state)
 
 
 def refresh_shop(state: GameState, player_id: str):
@@ -479,7 +508,8 @@ def perform_action(
     if get_current_player(state).id != player_id:
         raise ValueError("Not your turn")
 
-    if state.turn_subphase != "BATTLE_ACTION":
+    # FIX-5: Allow GRAVEDIGGING subphase
+    if state.turn_subphase not in ["BATTLE_ACTION", "GRAVEDIGGING"]:
         raise ValueError(f"Cannot perform action in {state.turn_subphase} subphase")
 
     # Restriction: If in a sub-turn (digging), must use the same character
@@ -490,15 +520,33 @@ def perform_action(
 
     action_cards = []
 
-    if dug_indices is not None:
-        # Use from dug pool
+    if char_index is None:
+        raise ValueError("char_index required")
+    char = player.characters[char_index]
+
+    # FIX-5: Select from dug_cards when in GRAVEDIGGING
+    if state.turn_subphase == "GRAVEDIGGING" and dug_indices is not None:
+        # Validate indices are within dug_cards
+        for idx in dug_indices:
+            if idx >= len(char.dug_cards):
+                raise ValueError(f"Invalid dug card index: {idx}")
+        # Collect selected cards (from dug_cards by index)
+        selected_cards = [char.dug_cards[idx] for idx in dug_indices]
+        action_cards = selected_cards
+        # Remove selected cards from both stack and dug_cards
+        for card in selected_cards:
+            if card in char.stack:
+                char.stack.remove(card)
+            if card in char.dug_cards:
+                char.dug_cards.remove(card)
+            state.discard_pile.append(card)
+        state.cards_removed_this_turn = True
+    elif dug_indices is not None:
+        # Legacy path for old state.dug_cards (if any remain)
         for idx in sorted(dug_indices, reverse=True):
             action_cards.append(state.dug_cards.pop(idx))
     else:
-        # Use from character stack
-        if char_index is None:
-            raise ValueError("char_index required")
-        char = player.characters[char_index]
+        # Use from character stack top
         for _ in range(top_n_cards):
             c = char.stack.pop()
             action_cards.append(c)
@@ -530,6 +578,12 @@ def perform_action(
     resolve_suit_effect(
         state, player_id, char_index, action_suit, total_rank, target_info
     )
+
+    # FIX-5: Exit GRAVEDIGGING if no dug cards remain
+    if state.turn_subphase == "GRAVEDIGGING" and len(char.dug_cards) == 0:
+        state.turn_subphase = "BATTLE_ACTION"
+        state.active_character_index = None
+        # Don't end turn yet - player can do more actions
 
     if not state.dug_cards and state.turn_subphase not in [
         "SHOPPING",
@@ -570,19 +624,23 @@ def resolve_suit_effect(
         char = next(p for p in state.players if p.id == player_id).characters[
             char_index
         ]
+        # FIX-5: Flag top N cards for gravedigging instead of removing them
         dig_count = min(total_rank, len(char.stack))
-        dug = []
-        for _ in range(dig_count):
-            card = char.stack.pop()
-            state.dug_cards.append(card)
-            dug.append(card)
-            state.cards_removed_this_turn = True
+        # Clear any previous dug cards from this character
+        char.dug_cards = []
+        # Flag the top N cards (cards remain on stack)
+        for i in range(dig_count):
+            stack_index = len(char.stack) - 1 - i
+            if stack_index >= 0:
+                char.dug_cards.append(char.stack[stack_index])
         log_event(
             state,
             "DIG_ACTION",
-            {"dig_count": dig_count, "dug_cards": [c.model_dump() for c in dug]},
+            {"dig_count": dig_count, "dug_cards": [c.model_dump() for c in char.dug_cards]},
         )
-        return  # Recursion
+        # Enter GRAVEDIGGING subphase
+        state.turn_subphase = "GRAVEDIGGING"
+        return  # Remain in turn for gravedigging
 
 
 def apply_face_strike(
@@ -600,7 +658,8 @@ def apply_face_strike(
     if state.phase != 2:
         raise ValueError("Must be in Phase 2")
 
-    if state.turn_subphase != "BATTLE_ACTION":
+    # FIX-5: Allow face strikes during GRAVEDIGGING as well
+    if state.turn_subphase not in ["BATTLE_ACTION", "GRAVEDIGGING"]:
         raise ValueError(f"Cannot strike in {state.turn_subphase} subphase")
 
     player = next(p for p in state.players if p.id == player_id)
@@ -614,8 +673,8 @@ def apply_face_strike(
 
     char = player.characters[char_index]
 
-    # If character has cards and we're not discarding them, must be digging
-    is_dug = len(state.dug_cards) > 0
+    # FIX-5: Check if this character has dug cards (per-character)
+    is_dug = len(char.dug_cards) > 0
     if len(char.stack) > 0:
         if discard_all_cards:
             # Discard all cards on this character first
@@ -657,9 +716,13 @@ def apply_face_strike(
                 "suit": char.suit,
             },
         )
-        player.characters.pop(char_index)
+        # FIX-6: Mark character as dead instead of removing
+        char.is_dead = True
+        char.stack = []
+        char.rank = ""
         state.cards_removed_this_turn = True
-        if not player.characters:
+        # Check if all characters are dead
+        if not any(c for c in player.characters if not c.is_dead):
             player.is_alive = False
             log_event(
                 state,
@@ -668,7 +731,8 @@ def apply_face_strike(
             )
             check_win_condition(state)
 
-    if not state.dug_cards:
+    # FIX-5: Check if the character has no dug cards to end turn
+    if not char.dug_cards:
         end_turn(state)
 
 
@@ -681,6 +745,10 @@ def attack_heart(
 ):
     target_player = next(p for p in state.players if p.id == target_player_id)
     target_char = target_player.characters[target_char_index]
+
+    # FIX-6: Cannot attack dead characters
+    if target_char.is_dead:
+        raise ValueError("Cannot target dead character")
 
     if not target_char.stack:
         if damage >= 1:
@@ -695,9 +763,13 @@ def attack_heart(
                     "suit": target_char.suit,
                 },
             )
-            target_player.characters.pop(target_char_index)
+            # FIX-6: Mark character as dead instead of removing
+            target_char.is_dead = True
+            target_char.stack = []
+            target_char.rank = ""
             state.cards_removed_this_turn = True
-            if not target_player.characters:
+            # Check if all characters are dead
+            if not any(c for c in target_player.characters if not c.is_dead):
                 target_player.is_alive = False
                 log_event(
                     state,
@@ -742,9 +814,13 @@ def attack_heart(
                 "suit": target_char.suit,
             },
         )
-        target_player.characters.pop(target_char_index)
+        # Mark character as dead instead of removing (FIX-6)
+        target_char.is_dead = True
+        target_char.stack = []
+        target_char.rank = ""
         state.cards_removed_this_turn = True
-        if not target_player.characters:
+        # Check if all characters are dead
+        if not any(c for c in target_player.characters if not c.is_dead):
             target_player.is_alive = False
             log_event(
                 state,
@@ -783,9 +859,10 @@ def end_turn(state: GameState):
     state.gravedig_pool = []
     state.free_buys_remaining = 0
 
-    # Clear temporary shields for all characters
+    # Clear temporary shields and dug cards for all characters
     for char in player.characters:
         char.temporary_shield = 0
+        char.dug_cards = []
 
     # Refill Shop Row at end of turn
     refill_shop_row(state)
@@ -890,9 +967,11 @@ def apply_fatigue(state: GameState, player_id: str, end_turn_after: bool = False
     if not player or not player.is_alive:
         return
 
-    if player.characters:
-        char_idx = len(player.characters) - 1
-        dead_char = player.characters.pop()
+    # Find last alive character (FIX-6)
+    alive_chars = [i for i, c in enumerate(player.characters) if not c.is_dead]
+    if alive_chars:
+        char_idx = alive_chars[-1]
+        dead_char = player.characters[char_idx]
         log_event(
             state,
             "CHARACTER_DEATH",
@@ -904,7 +983,12 @@ def apply_fatigue(state: GameState, player_id: str, end_turn_after: bool = False
                 "suit": dead_char.suit,
             },
         )
-        if not player.characters:
+        # Mark as dead instead of removing (FIX-6)
+        dead_char.is_dead = True
+        dead_char.stack = []
+        dead_char.rank = ""
+        # Check if all characters are dead
+        if not any(c for c in player.characters if not c.is_dead):
             player.is_alive = False
             log_event(
                 state, "PLAYER_DEAD", {"player_id": player_id, "reason": "FATIGUE"}
