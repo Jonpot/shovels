@@ -1,6 +1,6 @@
 import unittest
 from shovels_engine.models import GameState, Card, Player, Character, Suit
-from shovels_engine.engine import tap_hero_power, buy_card, resolve_gravedig
+from shovels_engine.engine import tap_hero_power, buy_card, resolve_gravedig, select_gravedig_card, finish_gravedig
 
 class TestHeroPowers(unittest.TestCase):
     def test_clubs_burst(self):
@@ -39,7 +39,7 @@ class TestHeroPowers(unittest.TestCase):
             players=[p1],
             phase=2,
             shop_row=[Card(rank=10, suit=Suit.CLUBS, is_ace=True)],
-            shop_pile=[Card(rank=2, suit=Suit.DIAMONDS)]
+            deck=[Card(rank=2, suit=Suit.DIAMONDS)]  # In Phase 2, shop refills from deck
         )
         tap_hero_power(state, "p1", 0) 
         self.assertEqual(state.turn_subphase, "SHOP_FREE_BUY")
@@ -96,15 +96,90 @@ class TestHeroPowers(unittest.TestCase):
             Character(rank="J", suit=Suit.HEARTS, stack=[Card(rank=8, suit=Suit.HEARTS)], temporary_shield=3)
         ])
         state = GameState(players=[p1, p2], phase=2, current_turn_index=0)
-        
+
         from shovels_engine.engine import attack_heart
         # 10 damage vs (8 rank + 3 shield = 11 threshold) -> Should fail
         attack_heart(state, "p1", "p2", 0, 10)
         self.assertEqual(len(p2.characters[0].stack), 1)
-        
+
         # 11 damage should succeed
         attack_heart(state, "p1", "p2", 0, 11)
         self.assertEqual(len(p2.characters[0].stack), 0)
+
+    def test_gravedig_click_to_add(self):
+        """Test the new click-to-add gravedig UX."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="Q", suit=Suit.SPADES)  # Q can keep 2 cards
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[
+                Card(uid="c1", rank=2, suit=Suit.CLUBS),
+                Card(uid="c2", rank=3, suit=Suit.CLUBS),
+                Card(uid="c3", rank=4, suit=Suit.CLUBS),
+                Card(uid="c4", rank=5, suit=Suit.CLUBS),
+                Card(uid="c5", rank=6, suit=Suit.CLUBS)
+            ]
+        )
+
+        # Tap to start gravedigging
+        tap_hero_power(state, "p1", 0)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(len(state.gravedig_pool), 5)
+        self.assertEqual(state.gravedig_cards_taken, 0)
+
+        # Select first card (index 0)
+        first_card = state.gravedig_pool[0]
+        select_gravedig_card(state, "p1", 0, 0)
+        self.assertEqual(len(p1.characters[0].stack), 1)
+        self.assertEqual(p1.characters[0].stack[0].uid, first_card.uid)
+        self.assertEqual(state.gravedig_cards_taken, 1)
+        self.assertEqual(len(state.gravedig_pool), 4)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")  # Still in gravedigging
+
+        # Select second card (now index 0 since first was removed)
+        second_card = state.gravedig_pool[0]
+        select_gravedig_card(state, "p1", 0, 0)
+        self.assertEqual(len(p1.characters[0].stack), 2)
+        self.assertEqual(p1.characters[0].stack[1].uid, second_card.uid)
+        self.assertEqual(state.gravedig_cards_taken, 0)  # Reset after completion
+        self.assertEqual(len(state.gravedig_pool), 0)  # Pool cleared
+        self.assertEqual(len(state.discard_pile), 3)  # Remaining 3 discarded
+        self.assertEqual(state.turn_subphase, "BATTLE_ACTION")  # Gravedigging complete
+
+    def test_gravedig_finish_early(self):
+        """Test finishing gravedigging before reaching the limit."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="K", suit=Suit.SPADES)  # K can keep 3 cards
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[
+                Card(uid="c1", rank=2, suit=Suit.CLUBS),
+                Card(uid="c2", rank=3, suit=Suit.CLUBS),
+                Card(uid="c3", rank=4, suit=Suit.CLUBS),
+                Card(uid="c4", rank=5, suit=Suit.CLUBS),
+                Card(uid="c5", rank=6, suit=Suit.CLUBS)
+            ]
+        )
+
+        # Tap to start gravedigging
+        tap_hero_power(state, "p1", 0)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+
+        # Select just one card
+        select_gravedig_card(state, "p1", 0, 0)
+        self.assertEqual(len(p1.characters[0].stack), 1)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")  # Still in gravedigging (K has 2 more)
+
+        # Finish early
+        finish_gravedig(state, "p1")
+        self.assertEqual(len(p1.characters[0].stack), 1)  # Still just 1 card
+        self.assertEqual(len(state.gravedig_pool), 0)  # Pool cleared
+        self.assertEqual(len(state.discard_pile), 4)  # Remaining 4 discarded
+        self.assertEqual(state.turn_subphase, "BATTLE_ACTION")
 
 if __name__ == '__main__':
     unittest.main()

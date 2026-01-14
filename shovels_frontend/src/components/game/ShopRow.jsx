@@ -32,7 +32,7 @@ const ShopRow = ({ shopCards, coins, onBuyCard, onRefreshShop, isShoppingPhase, 
                                         faceRank={card.face_rank}
                                         isAce={card.is_ace}
                                     />
-                                    <div className="price-tag">{price} 🪙</div>
+                                    <div className="price-tag">{price} G</div>
                                 </>
                             ) : (
                                 <div className="empty-slot-placeholder" />
@@ -54,11 +54,11 @@ const ShopRow = ({ shopCards, coins, onBuyCard, onRefreshShop, isShoppingPhase, 
                         disabled={coins < 2}
                         title={coins < 2 ? "Need 2 coins to refresh" : "Refresh shop for 2 coins"}
                     >
-                        Refresh Shop (2 🪙)
+                        Refresh Shop (2 G)
                     </button>
                 )}
                 <div className="coin-display">
-                    <span className="coin-icon">🪙</span> {coins}
+                    <span className="coin-icon">G</span> {coins}
                 </div>
             </div>
         </div>

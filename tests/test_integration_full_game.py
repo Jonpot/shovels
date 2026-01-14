@@ -183,7 +183,35 @@ class TestIntegration(unittest.TestCase):
                             from shovels_engine.engine import end_turn
                             end_turn(state)
 
+                    elif state.turn_subphase == "SPADE_DIG":
+                        # Handle spades action dig - select from dug_cards
+                        if state.active_character_index is None:
+                            from shovels_engine.engine import end_turn
+                            end_turn(state)
+                            continue
+                        char = player.characters[state.active_character_index]
+                        if not char.dug_cards:
+                            from shovels_engine.engine import end_turn
+                            end_turn(state)
+                            continue
+                        # Select random subset and perform action
+                        num_to_select = random.randint(1, len(char.dug_cards))
+                        dug_indices = random.sample(range(len(char.dug_cards)), num_to_select)
+                        suits = {char.dug_cards[i].suit for i in dug_indices}
+                        suit = random.choice(list(suits))
+                        target_info = None
+                        if suit == Suit.CLUBS:
+                            target_players = [p for p in state.players if p.is_alive and p.id != player.id]
+                            if target_players:
+                                target_p = random.choice(target_players)
+                                living_chars = [i for i, c in enumerate(target_p.characters) if not c.is_dead]
+                                if living_chars:
+                                    target_info = {'target_player_id': target_p.id, 'target_char_index': random.choice(living_chars)}
+                        perform_action(state, player.id, state.active_character_index, 0, suit,
+                                       target_info=target_info, dug_indices=dug_indices)
+
                     elif state.turn_subphase == "GRAVEDIGGING":
+                        # Handle spades hero power - select from gravedig_pool
                         if state.active_character_index is None:
                             from shovels_engine.engine import end_turn
                             end_turn(state)

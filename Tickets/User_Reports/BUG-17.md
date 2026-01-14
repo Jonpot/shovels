@@ -1,0 +1,1 @@
+Minor annoyance: the red toast banners that occassionally pop up are not centered. I think the left of the box is centered, but the center of the box should be centered.

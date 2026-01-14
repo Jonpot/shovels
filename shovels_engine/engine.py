@@ -336,17 +336,17 @@ def refresh_shop(state: GameState, player_id: str):
 
 
 def refill_shop_row(state: GameState):
-    """Internal helper to fill empty shop slots."""
+    """Internal helper to fill empty shop slots from the deck."""
     for i in range(len(state.shop_row)):
         if state.shop_row[i] is None:
-            if not state.shop_pile and state.discard_pile:
-                # Refill shop pile from discard
-                state.shop_pile = state.discard_pile[:]
+            if not state.deck and state.discard_pile:
+                # Refill deck from discard pile
+                state.deck = state.discard_pile[:]
                 state.discard_pile = []
-                random.shuffle(state.shop_pile)
+                random.shuffle(state.deck)
 
-            if state.shop_pile:
-                state.shop_row[i] = state.shop_pile.pop()
+            if state.deck:
+                state.shop_row[i] = state.deck.pop()
 
 
 def tap_hero_power(
@@ -453,14 +453,84 @@ def tap_hero_power(
         end_turn(state)
 
 
+def select_gravedig_card(
+    state: GameState, player_id: str, char_index: int, card_index: int
+):
+    """
+    Select a single card from gravedig_pool to add to character's stack.
+    Cards are added immediately when clicked. When the limit is reached,
+    remaining cards are discarded and gravedigging ends.
+    """
+    if state.turn_subphase != "GRAVEDIGGING":
+        raise ValueError("Must be in GRAVEDIGGING subphase")
+
+    player = next((p for p in state.players if p.id == player_id), None)
+    if not player:
+        raise ValueError(f"Player {player_id} not found")
+    char = player.characters[char_index]
+
+    if card_index >= len(state.gravedig_pool):
+        raise ValueError(f"Invalid card index: {card_index}")
+
+    num_keep = {"J": 1, "Q": 2, "K": 3}[char.rank]
+    cards_taken = getattr(state, 'gravedig_cards_taken', 0)
+
+    if cards_taken >= num_keep:
+        raise ValueError(f"Already took maximum {num_keep} cards")
+
+    # Take the selected card and add to character's stack
+    card = state.gravedig_pool.pop(card_index)
+    char.stack.append(card)
+    state.gravedig_cards_taken = cards_taken + 1
+
+    log_event(
+        state,
+        "GRAVEDIG_SELECT",
+        {"card": card.model_dump(), "cards_taken": state.gravedig_cards_taken, "limit": num_keep},
+    )
+
+    # Check if limit reached or no more cards
+    if state.gravedig_cards_taken >= num_keep or len(state.gravedig_pool) == 0:
+        # Discard remaining cards
+        state.discard_pile.extend(state.gravedig_pool)
+        state.gravedig_pool = []
+        state.gravedig_cards_taken = 0
+        state.turn_subphase = "BATTLE_ACTION"
+        if not state.dug_cards:
+            end_turn(state)
+
+
+def finish_gravedig(state: GameState, player_id: str):
+    """
+    Finish gravedigging early (before reaching the limit).
+    Discards remaining cards and ends the gravedigging phase.
+    """
+    if state.turn_subphase != "GRAVEDIGGING":
+        raise ValueError("Must be in GRAVEDIGGING subphase")
+
+    # Discard remaining cards
+    state.discard_pile.extend(state.gravedig_pool)
+    state.gravedig_pool = []
+    state.gravedig_cards_taken = 0
+    state.turn_subphase = "BATTLE_ACTION"
+    if not state.dug_cards:
+        end_turn(state)
+
+
 def resolve_gravedig(
     state: GameState, player_id: str, char_index: int, indices: List[int]
 ):
     """
-    Complete the Spades power: choose indices from gravedig_pool to keep.
+    Legacy function: Complete the Spades power by selecting multiple cards at once.
+    Kept for backwards compatibility. Prefer select_gravedig_card for new code.
     """
     if state.turn_subphase != "GRAVEDIGGING":
         raise ValueError("Must be in GRAVEDIGGING subphase")
+
+    # If empty indices, finish early
+    if not indices:
+        finish_gravedig(state, player_id)
+        return
 
     player = next((p for p in state.players if p.id == player_id), None)
     if not player:
@@ -508,8 +578,8 @@ def perform_action(
     if get_current_player(state).id != player_id:
         raise ValueError("Not your turn")
 
-    # FIX-5: Allow GRAVEDIGGING subphase
-    if state.turn_subphase not in ["BATTLE_ACTION", "GRAVEDIGGING"]:
+    # Allow SPADE_DIG subphase (for chained dig actions)
+    if state.turn_subphase not in ["BATTLE_ACTION", "SPADE_DIG"]:
         raise ValueError(f"Cannot perform action in {state.turn_subphase} subphase")
 
     # Restriction: If in a sub-turn (digging), must use the same character
@@ -524,8 +594,8 @@ def perform_action(
         raise ValueError("char_index required")
     char = player.characters[char_index]
 
-    # FIX-5: Select from dug_cards when in GRAVEDIGGING
-    if state.turn_subphase == "GRAVEDIGGING" and dug_indices is not None:
+    # Select from dug_cards when in SPADE_DIG subphase
+    if state.turn_subphase == "SPADE_DIG" and dug_indices is not None:
         # Validate indices are within dug_cards
         for idx in dug_indices:
             if idx >= len(char.dug_cards):
@@ -579,16 +649,21 @@ def perform_action(
         state, player_id, char_index, action_suit, total_rank, target_info
     )
 
-    # FIX-5: Exit GRAVEDIGGING if no dug cards remain
-    if state.turn_subphase == "GRAVEDIGGING" and len(char.dug_cards) == 0:
-        state.turn_subphase = "BATTLE_ACTION"
-        state.active_character_index = None
-        # Don't end turn yet - player can do more actions
+    # Exit SPADE_DIG if no dug cards remain
+    if state.turn_subphase == "SPADE_DIG" and len(char.dug_cards) == 0:
+        # If stack is empty (face exposed), player can face strike - don't end turn yet
+        if len(char.stack) == 0:
+            # Stay in SPADE_DIG to allow face strike with exposed face
+            pass
+        else:
+            state.turn_subphase = "BATTLE_ACTION"
+            state.active_character_index = None
+            # Don't end turn yet - player can do more actions
 
     if not state.dug_cards and state.turn_subphase not in [
         "SHOPPING",
         "SHOP_FREE_BUY",
-        "GRAVEDIGGING",
+        "SPADE_DIG",
     ]:
         end_turn(state)
 
@@ -624,7 +699,7 @@ def resolve_suit_effect(
         char = next(p for p in state.players if p.id == player_id).characters[
             char_index
         ]
-        # FIX-5: Flag top N cards for gravedigging instead of removing them
+        # Flag top N cards as "dug" - they remain on stack but are now selectable
         dig_count = min(total_rank, len(char.stack))
         # Clear any previous dug cards from this character
         char.dug_cards = []
@@ -638,9 +713,9 @@ def resolve_suit_effect(
             "DIG_ACTION",
             {"dig_count": dig_count, "dug_cards": [c.model_dump() for c in char.dug_cards]},
         )
-        # Enter GRAVEDIGGING subphase
-        state.turn_subphase = "GRAVEDIGGING"
-        return  # Remain in turn for gravedigging
+        # Enter SPADE_DIG subphase (distinct from GRAVEDIGGING which is for hero power)
+        state.turn_subphase = "SPADE_DIG"
+        return  # Remain in turn for digging
 
 
 def apply_face_strike(
@@ -658,8 +733,8 @@ def apply_face_strike(
     if state.phase != 2:
         raise ValueError("Must be in Phase 2")
 
-    # FIX-5: Allow face strikes during GRAVEDIGGING as well
-    if state.turn_subphase not in ["BATTLE_ACTION", "GRAVEDIGGING"]:
+    # Allow face strikes during SPADE_DIG (when face is exposed via digging)
+    if state.turn_subphase not in ["BATTLE_ACTION", "SPADE_DIG"]:
         raise ValueError(f"Cannot strike in {state.turn_subphase} subphase")
 
     player = next(p for p in state.players if p.id == player_id)
@@ -731,9 +806,11 @@ def apply_face_strike(
             )
             check_win_condition(state)
 
-    # FIX-5: Check if the character has no dug cards to end turn
-    if not char.dug_cards:
-        end_turn(state)
+    # Clear dug_cards after face strike - the action is complete
+    char.dug_cards = []
+
+    # Face strike ends the turn
+    end_turn(state)
 
 
 def attack_heart(
@@ -836,6 +913,8 @@ def end_turn(state: GameState):
     # Reset subphase and handle post-turn fatigue
     if state.turn_subphase in ["SHOPPING", "SHOP_FREE_BUY"]:
         log_event(state, "SHOPPING_END", {"coins_remaining": player.coins})
+    elif state.turn_subphase == "SPADE_DIG":
+        log_event(state, "SPADE_DIG_END", {})
     elif state.turn_subphase == "GRAVEDIGGING":
         log_event(state, "GRAVEDIGGING_END", {})
 
@@ -1013,16 +1092,23 @@ def apply_fatigue(state: GameState, player_id: str, end_turn_after: bool = False
 def transition_to_phase_2(state: GameState):
     """
     Reveal stacks and determine first player for Phase 2.
+    Per rules: Shuffle discard pile with 20-card shop pile to form the new deck.
     Highest unique Spade rank wins. (Ace > 10...2). Ties cancel out.
     """
     state.phase = 2
     state.turn_subphase = "BATTLE_ACTION"
 
-    # Initialize Shop Row
+    # Prepare the deck: combine discard pile and shop pile, then shuffle
+    state.deck = state.discard_pile + state.shop_pile
+    random.shuffle(state.deck)
+    state.discard_pile = []
+    state.shop_pile = []
+
+    # Initialize Shop Row with 3 cards from the new deck
     state.shop_row = []
     for _ in range(3):
-        if state.shop_pile:
-            state.shop_row.append(state.shop_pile.pop())
+        if state.deck:
+            state.shop_row.append(state.deck.pop())
 
     spade_ranks: Dict[int, List[int]] = collections.defaultdict(list)
     for p_idx, player in enumerate(state.players):

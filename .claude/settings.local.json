@@ -9,7 +9,8 @@
       "Bash(.venv/Scripts/python.exe -m pytest tests/ -v)",
       "Bash(npm run lint)",
       "Bash(.venv/Scripts/python.exe:*)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(PYTHONPATH=. pytest:*)"
     ]
   }
 }

@@ -1,7 +1,8 @@
 .character-stack-container {
     position: relative;
     width: 140px;
-    height: 200px;
+    min-height: 200px;
+    /* Height is now set dynamically via inline style based on stack size */
     display: flex;
     justify-content: center;
     align-items: flex-start;

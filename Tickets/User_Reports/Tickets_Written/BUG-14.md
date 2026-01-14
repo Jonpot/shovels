@@ -1,0 +1,1 @@
+Often times I am able to select cards even when I shouldn't. For example: when it's not my turn, when I'm selecting characters to recieve shopped cards, when I'm in the middle of an attack, etc. Really the only times I should be able to select cards are at the start of my turn in Phase 2 or when I've just performed a Spades action.

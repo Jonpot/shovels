@@ -47,27 +47,39 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
     const isMyTurn = gameState.current_turn_index !== undefined &&
         gameState.players[gameState.current_turn_index].id === user.id;
 
+    // Track previous subphase to detect transitions
+    const prevSubphaseRef = React.useRef(gameState.turn_subphase);
+
     // Reset pending draws if subphase changes
     React.useEffect(() => {
-        if (gameState.turn_subphase !== "DRAW") {
+        const prevSubphase = prevSubphaseRef.current;
+        const currentSubphase = gameState.turn_subphase;
+
+        if (currentSubphase !== "DRAW") {
             setPendingDrawSources([]);
         }
-        // Reset Phase 2 state when subphase changes (except when entering GRAVEDIGGING)
-        if (gameState.phase === 2 && gameState.turn_subphase !== "GRAVEDIGGING") {
-            setSelectedCharIndex(null);
-            setSelectedStackIndices([]);
-            setSelectedSuit(null);
-            setTargetMode(null);
-            setSelectedShopSlot(null);
-            setSelectedTargetPlayer(null);
-            setSelectedTargetChar(null);
-        }
-        // When entering GRAVEDIGGING, set character to active_character_index
-        if (gameState.phase === 2 && gameState.turn_subphase === "GRAVEDIGGING" && gameState.active_character_index !== null) {
-            setSelectedCharIndex(gameState.active_character_index);
-            setSelectedStackIndices([]);
-            setSelectedSuit(null);
-            setTargetMode(null);
+
+        // Only run initialization logic when subphase actually changes
+        if (prevSubphase !== currentSubphase) {
+            // Reset Phase 2 state when subphase changes (except when entering SPADE_DIG or GRAVEDIGGING)
+            if (gameState.phase === 2 && currentSubphase !== "SPADE_DIG" && currentSubphase !== "GRAVEDIGGING") {
+                setSelectedCharIndex(null);
+                setSelectedStackIndices([]);
+                setSelectedSuit(null);
+                setTargetMode(null);
+                setSelectedShopSlot(null);
+                setSelectedTargetPlayer(null);
+                setSelectedTargetChar(null);
+            }
+            // When entering SPADE_DIG (spades action) or GRAVEDIGGING (hero power), initialize state once
+            if (gameState.phase === 2 && (currentSubphase === "SPADE_DIG" || currentSubphase === "GRAVEDIGGING") && gameState.active_character_index !== null) {
+                setSelectedCharIndex(gameState.active_character_index);
+                setSelectedStackIndices([]);
+                setSelectedSuit(null);
+                setTargetMode(null);
+            }
+
+            prevSubphaseRef.current = currentSubphase;
         }
     }, [gameState.turn_subphase, gameState.phase, gameState.active_character_index]);
 
@@ -152,6 +164,18 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             // Phase 2: Select character to act with
             const char = myPlayer.characters[charIndex];
 
+            // FIX-12: Only allow character selection in appropriate states
+            // Characters can only be selected when:
+            // 1. It's the player's turn
+            // 2. In BATTLE_ACTION or SPADE_DIG subphase (for acting)
+            // 3. OR in SHOPPING/SHOP_FREE_BUY when buying (targetMode === 'buy')
+            if (!isMyTurn) return;
+
+            const canSelectForAction = ["BATTLE_ACTION", "SPADE_DIG"].includes(gameState.turn_subphase) && !targetMode;
+            const canSelectForBuying = ["SHOPPING", "SHOP_FREE_BUY"].includes(gameState.turn_subphase) && targetMode === 'buy';
+
+            if (!canSelectForAction && !canSelectForBuying) return;
+
             // FIX-6: Prevent selecting dead characters (unless buying a Jack)
             if (char.is_dead) {
                 if (targetMode === 'buy') {
@@ -186,6 +210,15 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
     const handleStackCardClick = (charIndex, cardIndex) => {
         if (gameState.phase !== 2) return;
 
+        // FIX-12: Only allow card selection in appropriate states
+        // Cards can only be selected:
+        // 1. When it's the player's turn
+        // 2. In BATTLE_ACTION or SPADE_DIG subphase
+        // 3. Not when targeting (selecting attack targets, buying cards, etc.)
+        if (!isMyTurn) return;
+        if (targetMode) return; // Can't select cards while targeting
+        if (!["BATTLE_ACTION", "SPADE_DIG"].includes(gameState.turn_subphase)) return;
+
         // Auto-select character when clicking a card in its stack
         if (selectedCharIndex !== charIndex) {
             setSelectedCharIndex(charIndex);
@@ -196,14 +229,14 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
         const char = myPlayer.characters[charIndex];
         const stackLen = char.stack.length;
 
-        // FIX-5: In GRAVEDIGGING mode, allow individual card selection
-        if (gameState.turn_subphase === "GRAVEDIGGING") {
+        // In SPADE_DIG mode (spades action), allow individual card selection from dug cards
+        if (gameState.turn_subphase === "SPADE_DIG") {
             // Check if this card is in dug_cards
             const card = char.stack[cardIndex];
             const isDugCard = char.dug_cards && char.dug_cards.some(dc => dc.uid === card.uid);
 
             if (!isDugCard) {
-                if (setError) setError("Can only select dug cards during gravedigging");
+                if (setError) setError("Can only select dug cards during spade dig");
                 return;
             }
 
@@ -304,11 +337,11 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             return;
         }
 
-        // FIX-5: Send dug_indices when in GRAVEDIGGING mode
+        // Send dug_indices when in SPADE_DIG mode (spades action)
         const char = myPlayer.characters[selectedCharIndex];
         let params;
 
-        if (gameState.turn_subphase === "GRAVEDIGGING") {
+        if (gameState.turn_subphase === "SPADE_DIG") {
             // Convert selectedStackIndices to dug_indices
             const dugIndices = [];
             selectedStackIndices.forEach(stackIdx => {
@@ -321,7 +354,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
 
             params = {
                 char_index: selectedCharIndex,
-                top_n_cards: 0,  // Not used in GRAVEDIGGING
+                top_n_cards: 0,  // Not used in SPADE_DIG
                 action_suit: suit,
                 dug_indices: dugIndices,
                 target_info: null
@@ -343,7 +376,11 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
             }
         });
 
-        setSelectedCharIndex(null);
+        // Don't clear character selection for spades action in SPADE_DIG - we may stay in it
+        // The useEffect will handle state reset when the subphase actually changes
+        if (gameState.turn_subphase !== "SPADE_DIG" || suit !== "SPADES") {
+            setSelectedCharIndex(null);
+        }
         setSelectedStackIndices([]);
     };
 
@@ -408,15 +445,19 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     }
                 }
             });
-            setSelectedCharIndex(null);
-            setSelectedStackIndices([]);
+            // Don't clear state when in SPADE_DIG - we may stay in it after face strike
+            // The useEffect will handle state reset when server responds with new subphase
+            if (gameState.turn_subphase !== "SPADE_DIG") {
+                setSelectedCharIndex(null);
+                setSelectedStackIndices([]);
+            }
             setTargetMode(null);
         } else if (targetMode === 'attack') {
-            // FIX-5: Clubs attack - handle GRAVEDIGGING mode
+            // Clubs attack - handle SPADE_DIG mode (spades action)
             const char = myPlayer.characters[selectedCharIndex];
             let params;
 
-            if (gameState.turn_subphase === "GRAVEDIGGING") {
+            if (gameState.turn_subphase === "SPADE_DIG") {
                 // Convert selectedStackIndices to dug_indices
                 const dugIndices = [];
                 selectedStackIndices.forEach(stackIdx => {
@@ -429,7 +470,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
 
                 params = {
                     char_index: selectedCharIndex,
-                    top_n_cards: 0,  // Not used in GRAVEDIGGING
+                    top_n_cards: 0,  // Not used in SPADE_DIG
                     action_suit: selectedSuit,
                     dug_indices: dugIndices,
                     target_info: {
@@ -882,7 +923,8 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                         </Button>
                     </div>
                 );
-            } else if (gameState.turn_subphase === "GRAVEDIGGING") {
+            } else if (gameState.turn_subphase === "SPADE_DIG") {
+                // SPADE_DIG: Player used spades action and is selecting from dug cards on their character
                 const selectedChar = selectedCharIndex !== null ? myPlayer.characters[selectedCharIndex] : null;
                 const selectedCards = selectedChar && selectedStackIndices.length > 0
                     ? selectedStackIndices.map(i => selectedChar.stack[i])
@@ -896,8 +938,8 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                     selectedChar.dug_cards.length === selectedChar.stack.length;
 
                 return (
-                    <div className="phase-controls phase2-gravedig">
-                        <h3>Gravedigging</h3>
+                    <div className="phase-controls phase2-spade-dig">
+                        <h3>Spade Dig</h3>
                         {targetMode ? (
                             <p className="instruction">🎯 {
                                 targetMode === 'strike' || targetMode === 'strike_with_discard' ? 'Select opponent character to STRIKE' :
@@ -905,7 +947,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                 'Select opponent character to target'
                             }</p>
                         ) : selectedChar ? (
-                            <div className="gravedig-actions">
+                            <div className="spade-dig-actions">
                                 <p className="selected-char-label">
                                     Acting with: {selectedChar.rank} of {selectedChar.suit}
                                     <br />
@@ -943,7 +985,82 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                 </Button>
                             </div>
                         ) : (
-                            <p className="instruction">ERROR: No character selected in GRAVEDIGGING</p>
+                            <p className="instruction">ERROR: No character selected in SPADE_DIG</p>
+                        )}
+                    </div>
+                );
+            } else if (gameState.turn_subphase === "GRAVEDIGGING") {
+                // GRAVEDIGGING: Player tapped spades hero power and is selecting from gravedig_pool (drawn from discard)
+                const selectedChar = selectedCharIndex !== null ? myPlayer.characters[selectedCharIndex] : null;
+                const gravedigPool = gameState.gravedig_pool || [];
+                const keepLimit = selectedChar ? {"J": 1, "Q": 2, "K": 3}[selectedChar.rank] || 1 : 1;
+                const cardsTaken = gameState.gravedig_cards_taken || 0;
+                const cardsRemaining = keepLimit - cardsTaken;
+
+                // Handle clicking a card - immediately add it to the stack
+                const handleGravedigCardClick = (cardIndex) => {
+                    sendMessage({
+                        type: 'action',
+                        data: {
+                            action_type: 'select_gravedig_card',
+                            params: {
+                                char_index: selectedCharIndex,
+                                card_index: cardIndex
+                            }
+                        }
+                    });
+                };
+
+                // Handle finishing early
+                const handleFinishGravedig = () => {
+                    sendMessage({
+                        type: 'action',
+                        data: {
+                            action_type: 'finish_gravedig',
+                            params: {}
+                        }
+                    });
+                };
+
+                return (
+                    <div className="phase-controls phase2-gravedigging">
+                        <h3>Gravedigging (Hero Power)</h3>
+                        {selectedChar ? (
+                            <div className="gravedig-actions">
+                                <p className="selected-char-label">
+                                    {selectedChar.rank} of Spades - Click cards to keep ({cardsRemaining} remaining)
+                                </p>
+
+                                {gravedigPool.length > 0 ? (
+                                    <div className="gravedig-pool">
+                                        <p>Click a card to add it to your stack:</p>
+                                        <div className="gravedig-cards">
+                                            {gravedigPool.map((card, idx) => (
+                                                <div
+                                                    key={card.uid || idx}
+                                                    className="gravedig-card"
+                                                    onClick={() => handleGravedigCardClick(idx)}
+                                                >
+                                                    <Card rank={card.rank} suit={card.suit} isFace={card.is_face} faceRank={card.face_rank} isAce={card.is_ace} />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p>{cardsTaken}/{keepLimit} cards taken</p>
+                                        {cardsTaken > 0 && (
+                                            <Button
+                                                onClick={handleFinishGravedig}
+                                                variant="ghost"
+                                            >
+                                                Done (discard remaining)
+                                            </Button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="instruction">No cards in gravedig pool</p>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="instruction">ERROR: No character selected for gravedigging</p>
                         )}
                     </div>
                 );
@@ -998,22 +1115,31 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                 <div className="my-characters-sidebar">
                     <h3>My Characters</h3>
                     <div className="characters-scroll-list">
-                        {myPlayer.characters.map((char, i) => (
-                            <CharacterStack
-                                key={char.uid}
-                                character={char}
-                                charIndex={i}
-                                onStackClick={() => handleCharacterClick(i)}
-                                onCardClick={(cardIndex) => handleStackCardClick(i, cardIndex)}
-                                isTargetable={
-                                    (gameState.turn_subphase === 'PLAY' && selectedHandIndices.length === 1) ||
-                                    (gameState.phase === 2 && (targetMode === 'buy' || !targetMode))
-                                }
-                                isSelected={selectedCharIndex === i}
-                                selectedStackIndices={selectedCharIndex === i ? selectedStackIndices : []}
-                                phase={gameState.phase}
-                            />
-                        ))}
+                        {myPlayer.characters.map((char, i) => {
+                            // FIX-12: Calculate whether this character and its cards are interactable
+                            const canSelectCharacter = isMyTurn && (
+                                (gameState.turn_subphase === 'PLAY' && selectedHandIndices.length === 1) ||
+                                (gameState.phase === 2 && ["BATTLE_ACTION", "SPADE_DIG"].includes(gameState.turn_subphase) && !targetMode) ||
+                                (gameState.phase === 2 && ["SHOPPING", "SHOP_FREE_BUY"].includes(gameState.turn_subphase) && targetMode === 'buy')
+                            );
+                            const canSelectCards = isMyTurn && gameState.phase === 2 &&
+                                ["BATTLE_ACTION", "SPADE_DIG"].includes(gameState.turn_subphase) && !targetMode;
+
+                            return (
+                                <CharacterStack
+                                    key={char.uid}
+                                    character={char}
+                                    charIndex={i}
+                                    onStackClick={() => handleCharacterClick(i)}
+                                    onCardClick={(cardIndex) => handleStackCardClick(i, cardIndex)}
+                                    isTargetable={canSelectCharacter}
+                                    isCardSelectable={canSelectCards}
+                                    isSelected={selectedCharIndex === i}
+                                    selectedStackIndices={selectedCharIndex === i ? selectedStackIndices : []}
+                                    phase={gameState.phase}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -1102,7 +1228,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                             <Users size={16} /> <strong>{opp.name}</strong>
                                         </div>
                                         <div className="opp-list-stats">
-                                            {opp.hand.length} cards | 🪙 {opp.coins} | {opp.characters.length} chars
+                                            {opp.hand.length} cards | G {opp.coins} | {opp.characters.length} chars
                                         </div>
                                         <div className="opp-list-chars-preview">
                                             {opp.characters.map((c, idx) => (
@@ -1160,7 +1286,7 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                         </div>
                                     </div>
                                     <div className="opp-detail-stats">
-                                        {selectedOpp.hand.length} cards | 🪙 {selectedOpp.coins}
+                                        {selectedOpp.hand.length} cards | G {selectedOpp.coins}
                                     </div>
                                     <div className="characters-scroll-list">
                                         {selectedOpp.characters.map((char, charIndex) => (

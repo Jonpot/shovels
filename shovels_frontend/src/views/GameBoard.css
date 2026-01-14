@@ -396,6 +396,68 @@
 }
 
 /* Gravedigging */
+.phase2-gravedigging {
+    min-width: 400px;
+}
+
+.phase2-gravedigging h3 {
+    color: #9C27B0;
+    margin-bottom: 0.5rem;
+}
+
+.gravedig-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.selected-char-label {
+    background: rgba(156, 39, 176, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    color: #9C27B0;
+    font-weight: bold;
+    text-align: center;
+}
+
+.gravedig-pool {
+    width: 100%;
+    text-align: center;
+}
+
+.gravedig-pool p {
+    margin: 0.5rem 0;
+}
+
+.gravedig-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    justify-items: center;
+    max-width: 420px;
+    margin: 0.5rem auto;
+}
+
+.gravedig-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 8px;
+    padding: 4px;
+    background: transparent;
+}
+
+.gravedig-card:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+}
+
+.gravedig-card.selected {
+    box-shadow: 0 0 0 3px #9C27B0, 0 0 15px rgba(156, 39, 176, 0.5);
+    transform: scale(1.08);
+    background: rgba(156, 39, 176, 0.1);
+}
+
 .phase2-gravedig .instruction {
     color: #9C27B0;
     font-weight: bold;

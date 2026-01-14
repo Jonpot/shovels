@@ -154,7 +154,36 @@ class RandomAgent(Agent):
                     if not played_in_shop or (player.coins < 3 and state.turn_subphase == "SHOPPING"):
                         end_turn(state)
 
+                elif state.turn_subphase == "SPADE_DIG":
+                    # Handle spades action dig - select from dug_cards on character
+                    if state.active_character_index is None:
+                        end_turn(state)
+                        return
+                    char = player.characters[state.active_character_index]
+                    if not char.dug_cards:
+                        end_turn(state)
+                        return
+                    # Select random subset of dug cards for action
+                    num_to_select = random.randint(1, len(char.dug_cards))
+                    dug_indices = random.sample(range(len(char.dug_cards)), num_to_select)
+                    suits = {char.dug_cards[i].suit for i in dug_indices}
+                    suit = random.choice(list(suits))
+
+                    target_info = None
+                    if suit == Suit.CLUBS:
+                        target_players = [p for p in state.players if p.is_alive and p.id != player_id]
+                        if target_players:
+                            target_p = random.choice(target_players)
+                            living_chars = [i for i, c in enumerate(target_p.characters) if not c.is_dead]
+                            if living_chars:
+                                target_c_idx = random.choice(living_chars)
+                                target_info = {'target_player_id': target_p.id, 'target_char_index': target_c_idx}
+
+                    perform_action(state, player_id, state.active_character_index, 0, suit,
+                                   target_info=target_info, dug_indices=dug_indices)
+
                 elif state.turn_subphase == "GRAVEDIGGING":
+                    # Handle spades hero power - select from gravedig_pool
                     if state.active_character_index is None:
                         end_turn(state)
                         return

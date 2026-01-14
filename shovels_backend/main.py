@@ -192,8 +192,12 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str):
                         engine.refresh_shop(room.state, user_data["id"])
                     elif action_type == "tap" or action_type == "tap_hero":
                         engine.tap_hero_power(room.state, user_data["id"], **params)
-                    elif action_type == "gravedig":
+                    elif action_type == "gravedig" or action_type == "resolve_gravedig":
                         engine.resolve_gravedig(room.state, user_data["id"], **params)
+                    elif action_type == "select_gravedig_card":
+                        engine.select_gravedig_card(room.state, user_data["id"], **params)
+                    elif action_type == "finish_gravedig":
+                        engine.finish_gravedig(room.state, user_data["id"])
                     elif action_type == "action" or action_type == "perform_action":
                         engine.perform_action(room.state, user_data["id"], **params)
                     elif action_type == "strike" or action_type == "face_strike":

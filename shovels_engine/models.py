@@ -60,6 +60,7 @@ class GameState(BaseModel):
     dug_cards: List[Card] = Field(default_factory=list)
     active_character_index: Optional[int] = None
     gravedig_pool: List[Card] = Field(default_factory=list)
+    gravedig_cards_taken: int = 0
     free_buys_remaining: int = 0
     events: List[Dict] = Field(default_factory=list)
     winner_id: Optional[str] = None

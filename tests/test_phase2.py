@@ -142,10 +142,10 @@ class TestPhase2(unittest.TestCase):
         
         # Dig with Spade
         perform_action(state, "p1", 0, 1, Suit.SPADES)
-        # FIX-5: Card(2, Spades) was popped for action. Card(5, Hearts) is flagged as dug but remains on stack.
+        # Card(2, Spades) was popped for action. Card(5, Hearts) is flagged as dug but remains on stack.
         self.assertEqual(len(p1.characters[0].stack), 1)
         self.assertEqual(len(p1.characters[0].dug_cards), 1)
-        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(state.turn_subphase, "SPADE_DIG")
 
         # Now apply face strike (allowed because we are digging)
         apply_face_strike(state, "p1", 0, "p2", 0)

@@ -1,0 +1,3 @@
+The Spades Hero power doesn't work at all. It's supposed to draw a hand of 5 from the discard pile, and then let me play 1/2/3 to the J/Q/K of Spades I just tapped.
+
+No hand appears but notably the discard pile DOES decrease. I suspect this is because the Hand element is being hidden during Phase 2 because it was covering other elements. You will have to find a way to render the hand without cutting off other elements.

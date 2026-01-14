@@ -9,6 +9,7 @@ const CharacterStack = ({
     onStackClick,
     onCardClick,
     isTargetable,
+    isCardSelectable = false, // FIX-12: Whether cards in the stack can be selected
     isSelected,
     selectedStackIndices = [],
     phase = 1,
@@ -20,7 +21,8 @@ const CharacterStack = ({
     const containerRef = React.useRef(null);
 
     const handleCardClick = (e, cardIndex) => {
-        if (phase === 2 && onCardClick) {
+        // FIX-12: Only allow card clicks when cards are selectable
+        if (phase === 2 && onCardClick && isCardSelectable) {
             e.stopPropagation(); // Prevent character click
             onCardClick(cardIndex);
         }
@@ -67,6 +69,13 @@ const CharacterStack = ({
     // Show hidden card back for opponent characters in Phase 1
     const showHidden = isOpponent && phase === 1;
 
+    // Calculate container height to cover full visible stack area
+    // Card height from Card.css is 200px, stacked cards use top = (i+1) * 20px
+    // Container needs: base card height + offset of the last stacked card
+    const baseCardHeight = 200; // matches .shovels-card height in Card.css
+    const stackedCardOffset = 20; // matches inline style (i + 1) * 20
+    const containerHeight = baseCardHeight + (character.stack.length * stackedCardOffset);
+
     // Handle dead characters (FIX-6)
     if (character.is_dead) {
         return (
@@ -91,6 +100,7 @@ const CharacterStack = ({
         <motion.div
             ref={containerRef}
             className={`character-stack-container ${isTargetable ? 'targetable' : ''} ${isSelected ? 'selected' : ''} ${character.is_tapped ? 'tapped' : ''}`}
+            style={{ height: `${containerHeight}px` }}
             onClick={onStackClick}
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
@@ -121,12 +131,14 @@ const CharacterStack = ({
                 >
                     {character.stack.map((card, i) => {
                         const isCardSelected = selectedStackIndices.includes(i);
-                        // FIX-5: Check if card is dug (available for gravedigging)
+                        // FIX-5: Check if card is dug (available for spade dig action)
                         const isDugCard = character.dug_cards && character.dug_cards.some(dc => dc.uid === card.uid);
+                        // FIX-12: Cards are clickable only when isCardSelectable is true
+                        const cardIsClickable = isCardSelectable && isSelected;
                         return (
                             <motion.div
                                 key={card.uid}
-                                className={`stacked-card-wrapper ${isCardSelected ? 'card-selected' : ''} ${isDugCard ? 'dug-card' : ''} ${phase === 2 && isSelected ? 'clickable' : ''}`}
+                                className={`stacked-card-wrapper ${isCardSelected ? 'card-selected' : ''} ${isDugCard ? 'dug-card' : ''} ${cardIsClickable ? 'clickable' : ''}`}
                                 style={{
                                     zIndex: i + 2,
                                     top: `${(i + 1) * 20}px`,
@@ -134,7 +146,7 @@ const CharacterStack = ({
                                 }}
                                 onClick={(e) => handleCardClick(e, i)}
                                 initial={{ x: '-50%' }}
-                                whileHover={phase === 2 && isSelected ? {
+                                whileHover={cardIsClickable ? {
                                     x: '-50%',
                                     zIndex: 100,
                                     scale: 1.25,

@@ -12,7 +12,7 @@ class TestShop(unittest.TestCase):
             phase=2,
             turn_subphase="SHOPPING",
             shop_row=[Card(rank=5, suit=Suit.DIAMONDS)],
-            shop_pile=[Card(rank=2, suit=Suit.HEARTS)]
+            deck=[Card(rank=2, suit=Suit.HEARTS)]  # In Phase 2, shop refills from deck
         )
         buy_card(state, "p1", 0, 0)
         self.assertEqual(p1.coins, 5)
@@ -30,7 +30,7 @@ class TestShop(unittest.TestCase):
             phase=2,
             turn_subphase="SHOPPING",
             shop_row=[Card(rank=0, suit=Suit.HEARTS, is_face=True, face_rank="Q")],
-            shop_pile=[]
+            deck=[]  # In Phase 2, shop_pile should be empty (merged into deck at transition)
         )
         buy_card(state, "p1", 0, 0)
         self.assertEqual(p1.coins, 6) # 10 - 4
@@ -61,14 +61,14 @@ class TestShop(unittest.TestCase):
             phase=2,
             turn_subphase="BATTLE_ACTION",
             shop_row=[Card(rank=2, suit=Suit.CLUBS)],
-            shop_pile=[Card(rank=5, suit=Suit.DIAMONDS)]
+            deck=[Card(rank=5, suit=Suit.DIAMONDS)]  # In Phase 2, shop draws from deck
         )
         refresh_shop(state, "p1")
         self.assertEqual(state.players[0].coins, 3)
         self.assertIsNotNone(state.shop_row[0])
         self.assertEqual(state.shop_row[0].rank, 5)  # type: ignore[union-attr]
-        # Discard pile was emptied to refill shop pile
-        self.assertEqual(len(state.discard_pile), 0)
+        # Deck is now empty after refill
+        self.assertEqual(len(state.deck), 0)
 
     def test_refresh_shop_refill(self):
         p1 = Player(id="p1", name="P1", coins=2)
@@ -77,11 +77,11 @@ class TestShop(unittest.TestCase):
             phase=2,
             turn_subphase="BATTLE_ACTION",
             shop_row=[Card(rank=2, suit=Suit.CLUBS)],
-            shop_pile=[], # Empty shop pile
+            deck=[], # Empty deck
             discard_pile=[Card(rank=5, suit=Suit.DIAMONDS)]
         )
         refresh_shop(state, "p1")
-        # should have 3 slots, filled from discard then shuffled back
+        # should have 3 slots, filled from discard (shuffled into deck) then drawn
         self.assertEqual(state.players[0].coins, 0)
         self.assertEqual(len(state.shop_row), 3)
         self.assertEqual(len(state.discard_pile), 0)
