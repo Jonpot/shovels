@@ -458,6 +458,17 @@
     background: rgba(156, 39, 176, 0.1);
 }
 
+.gravedig-card.invalid {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+.gravedig-card.invalid:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .phase2-gravedig .instruction {
     color: #9C27B0;
     font-weight: bold;

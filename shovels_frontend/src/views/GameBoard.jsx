@@ -1035,15 +1035,24 @@ const GameBoard = ({ gameState, user, sendMessage, error, setError }) => {
                                     <div className="gravedig-pool">
                                         <p>Click a card to add it to your stack:</p>
                                         <div className="gravedig-cards">
-                                            {gravedigPool.map((card, idx) => (
-                                                <div
-                                                    key={card.uid || idx}
-                                                    className="gravedig-card"
-                                                    onClick={() => handleGravedigCardClick(idx)}
-                                                >
-                                                    <Card rank={card.rank} suit={card.suit} isFace={card.is_face} faceRank={card.face_rank} isAce={card.is_ace} />
-                                                </div>
-                                            ))}
+                                            {gravedigPool.map((card, idx) => {
+                                                // Check if card can be taken (face card upgrade rules)
+                                                const rankValues = {"J": 1, "Q": 2, "K": 3};
+                                                const isInvalidFace = card.is_face && (
+                                                    card.face_rank === "J" ||  // Never Jacks
+                                                    rankValues[card.face_rank] <= rankValues[selectedChar.rank]  // Must upgrade
+                                                );
+                                                return (
+                                                    <div
+                                                        key={card.uid || idx}
+                                                        className={`gravedig-card ${isInvalidFace ? 'invalid' : ''}`}
+                                                        onClick={() => !isInvalidFace && handleGravedigCardClick(idx)}
+                                                        title={isInvalidFace ? (card.face_rank === "J" ? "Cannot take Jacks" : `Cannot take ${card.face_rank} (must upgrade from ${selectedChar.rank})`) : "Click to add to stack"}
+                                                    >
+                                                        <Card rank={card.rank} suit={card.suit} isFace={card.is_face} faceRank={card.face_rank} isAce={card.is_ace} />
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <p>{cardsTaken}/{keepLimit} cards taken</p>
                                         {cardsTaken > 0 && (

@@ -181,5 +181,117 @@ class TestHeroPowers(unittest.TestCase):
         self.assertEqual(len(state.discard_pile), 4)  # Remaining 4 discarded
         self.assertEqual(state.turn_subphase, "BATTLE_ACTION")
 
+    def test_gravedig_empty_pool_skips(self):
+        """Test that empty discard pile skips GRAVEDIGGING entirely."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="J", suit=Suit.SPADES)
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[]  # Empty!
+        )
+
+        # Tap should NOT enter GRAVEDIGGING
+        tap_hero_power(state, "p1", 0)
+        self.assertNotEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(len(state.gravedig_pool), 0)
+        self.assertTrue(p1.characters[0].is_tapped)
+
+    def test_gravedig_face_card_upgrade(self):
+        """Test that face cards in gravedig follow upgrade rules."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="J", suit=Suit.SPADES)  # J can upgrade to Q or K
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[
+                Card(uid="q1", rank=0, suit=Suit.HEARTS, is_face=True, face_rank="Q"),  # Valid upgrade
+                Card(uid="c1", rank=5, suit=Suit.CLUBS),  # Number card - always valid
+            ]
+        )
+
+        tap_hero_power(state, "p1", 0)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+
+        # Take the Queen - should upgrade character
+        q_idx = next(i for i, c in enumerate(state.gravedig_pool) if c.is_face and c.face_rank == "Q")
+        select_gravedig_card(state, "p1", 0, q_idx)
+
+        # Character should now be Q of Hearts
+        self.assertEqual(p1.characters[0].rank, "Q")
+        self.assertEqual(p1.characters[0].suit, Suit.HEARTS)
+
+    def test_gravedig_cannot_take_jack(self):
+        """Test that Jack face cards cannot be taken from gravedig."""
+        from shovels_engine.engine import can_take_gravedig_card
+
+        jack_card = Card(uid="j1", rank=0, suit=Suit.HEARTS, is_face=True, face_rank="J")
+        char = Character(rank="J", suit=Suit.SPADES)
+
+        # Jacks can never be taken
+        self.assertFalse(can_take_gravedig_card(jack_card, char))
+
+    def test_gravedig_no_downgrade(self):
+        """Test that face cards cannot downgrade character."""
+        from shovels_engine.engine import can_take_gravedig_card
+
+        queen_card = Card(uid="q1", rank=0, suit=Suit.HEARTS, is_face=True, face_rank="Q")
+        king_char = Character(rank="K", suit=Suit.SPADES)
+
+        # K cannot take Q (downgrade)
+        self.assertFalse(can_take_gravedig_card(queen_card, king_char))
+
+    def test_gravedig_auto_exit_no_valid_cards(self):
+        """Test auto-exit when all remaining cards are invalid face cards."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="K", suit=Suit.SPADES)  # K cannot upgrade further
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[
+                Card(uid="j1", rank=0, suit=Suit.HEARTS, is_face=True, face_rank="J"),  # Invalid - Jack
+                Card(uid="q1", rank=0, suit=Suit.CLUBS, is_face=True, face_rank="Q"),   # Invalid - downgrade
+                Card(uid="c1", rank=5, suit=Suit.CLUBS),  # Valid number card
+            ]
+        )
+
+        tap_hero_power(state, "p1", 0)
+        self.assertEqual(state.turn_subphase, "GRAVEDIGGING")
+
+        # Find and take the number card
+        num_idx = next(i for i, c in enumerate(state.gravedig_pool) if not c.is_face)
+        select_gravedig_card(state, "p1", 0, num_idx)
+
+        # Should auto-exit because remaining cards (J and Q) are both invalid for K
+        self.assertNotEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(len(state.gravedig_pool), 0)
+
+    def test_gravedig_all_invalid_skips(self):
+        """Test that GRAVEDIGGING is skipped if all drawn cards are invalid."""
+        p1 = Player(id="p1", name="P1", characters=[
+            Character(rank="K", suit=Suit.SPADES)  # K cannot upgrade
+        ])
+        state = GameState(
+            players=[p1],
+            phase=2,
+            discard_pile=[
+                Card(uid="j1", rank=0, suit=Suit.HEARTS, is_face=True, face_rank="J"),
+                Card(uid="j2", rank=0, suit=Suit.CLUBS, is_face=True, face_rank="J"),
+                Card(uid="q1", rank=0, suit=Suit.DIAMONDS, is_face=True, face_rank="Q"),
+            ]
+        )
+
+        # All cards are face cards that K cannot take
+        tap_hero_power(state, "p1", 0)
+
+        # Should skip GRAVEDIGGING entirely
+        self.assertNotEqual(state.turn_subphase, "GRAVEDIGGING")
+        self.assertEqual(len(state.gravedig_pool), 0)
+        # Cards should be in discard
+        self.assertEqual(len(state.discard_pile), 3)
+
 if __name__ == '__main__':
     unittest.main()

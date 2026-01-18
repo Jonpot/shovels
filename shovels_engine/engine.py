@@ -436,9 +436,20 @@ def tap_hero_power(
 
         # Remaining discard pile
         state.discard_pile.extend(temp_deck)
-        state.turn_subphase = "GRAVEDIGGING"
-        state.active_character_index = char_index
-        return  # subphase remains
+
+        # Check if there are any valid cards to take
+        # (empty pool or all cards are invalid face cards)
+        if len(state.gravedig_pool) == 0 or not has_valid_gravedig_cards(state.gravedig_pool, char):
+            # No valid cards - discard pool and skip GRAVEDIGGING
+            state.discard_pile.extend(state.gravedig_pool)
+            state.gravedig_pool = []
+            log_event(state, "GRAVEDIG_SKIP", {"reason": "no_valid_cards"})
+            # Don't enter GRAVEDIGGING, continue to end_turn check below
+        else:
+            state.turn_subphase = "GRAVEDIGGING"
+            state.active_character_index = char_index
+            state.gravedig_cards_taken = 0
+            return  # subphase remains
 
     elif char.suit == Suit.HEARTS:
         shield_values = {"J": 3, "Q": 5, "K": 10}
@@ -453,6 +464,44 @@ def tap_hero_power(
         end_turn(state)
 
 
+def can_take_gravedig_card(card: Card, char: "Character") -> bool:
+    """
+    Check if a card from gravedig_pool can be legally taken.
+    - Number cards: Always valid (added to stack)
+    - Face cards: Must be a valid upgrade (Q > J, K > Q), never Jacks
+    """
+    if not card.is_face:
+        return True  # Number cards always valid
+
+    # Face cards follow upgrade rules
+    # Never take Jacks
+    if card.face_rank == "J":
+        return False
+
+    # Must be a strict upgrade
+    rank_values = {"J": 1, "Q": 2, "K": 3}
+    card_value = rank_values.get(card.face_rank, 0)
+    char_value = rank_values.get(char.rank, 0)
+
+    return card_value > char_value
+
+
+def has_valid_gravedig_cards(gravedig_pool: List[Card], char: "Character") -> bool:
+    """Check if any cards in the pool can be legally taken."""
+    return any(can_take_gravedig_card(card, char) for card in gravedig_pool)
+
+
+def end_gravedigging(state: GameState):
+    """End the gravedigging phase, discarding remaining cards."""
+    state.discard_pile.extend(state.gravedig_pool)
+    state.gravedig_pool = []
+    state.gravedig_cards_taken = 0
+    state.turn_subphase = "BATTLE_ACTION"
+    state.active_character_index = None
+    if not state.dug_cards:
+        end_turn(state)
+
+
 def select_gravedig_card(
     state: GameState, player_id: str, char_index: int, card_index: int
 ):
@@ -460,6 +509,8 @@ def select_gravedig_card(
     Select a single card from gravedig_pool to add to character's stack.
     Cards are added immediately when clicked. When the limit is reached,
     remaining cards are discarded and gravedigging ends.
+
+    Face cards follow upgrade rules: Q > J, K > Q, never Jacks.
     """
     if state.turn_subphase != "GRAVEDIGGING":
         raise ValueError("Must be in GRAVEDIGGING subphase")
@@ -472,15 +523,41 @@ def select_gravedig_card(
     if card_index >= len(state.gravedig_pool):
         raise ValueError(f"Invalid card index: {card_index}")
 
+    card = state.gravedig_pool[card_index]
+
+    # Validate face card upgrade rules
+    if not can_take_gravedig_card(card, char):
+        if card.is_face and card.face_rank == "J":
+            raise ValueError("Cannot take Jack face cards from gravedig")
+        else:
+            raise ValueError(f"Cannot take {card.face_rank} - must be upgrade from {char.rank}")
+
     num_keep = {"J": 1, "Q": 2, "K": 3}[char.rank]
     cards_taken = getattr(state, 'gravedig_cards_taken', 0)
 
     if cards_taken >= num_keep:
         raise ValueError(f"Already took maximum {num_keep} cards")
 
-    # Take the selected card and add to character's stack
-    card = state.gravedig_pool.pop(card_index)
-    char.stack.append(card)
+    # Take the selected card
+    state.gravedig_pool.pop(card_index)
+
+    # Handle face card upgrade vs number card to stack
+    if card.is_face:
+        # Upgrade the character
+        old_face = Card(rank=0, suit=char.suit, is_face=True, face_rank=char.rank)
+        state.discard_pile.append(old_face)
+        char.rank = card.face_rank
+        char.suit = card.suit
+        char.is_tapped = False
+        log_event(
+            state,
+            "GRAVEDIG_UPGRADE",
+            {"old_rank": old_face.face_rank, "new_rank": card.face_rank, "new_suit": card.suit},
+        )
+    else:
+        # Number card to stack
+        char.stack.append(card)
+
     state.gravedig_cards_taken = cards_taken + 1
 
     log_event(
@@ -489,15 +566,18 @@ def select_gravedig_card(
         {"card": card.model_dump(), "cards_taken": state.gravedig_cards_taken, "limit": num_keep},
     )
 
-    # Check if limit reached or no more cards
-    if state.gravedig_cards_taken >= num_keep or len(state.gravedig_pool) == 0:
-        # Discard remaining cards
-        state.discard_pile.extend(state.gravedig_pool)
-        state.gravedig_pool = []
-        state.gravedig_cards_taken = 0
-        state.turn_subphase = "BATTLE_ACTION"
-        if not state.dug_cards:
-            end_turn(state)
+    # Check exit conditions:
+    # 1. Reached the keep limit
+    # 2. No more cards in pool
+    # 3. No valid cards remaining (all are invalid face cards)
+    should_exit = (
+        state.gravedig_cards_taken >= num_keep or
+        len(state.gravedig_pool) == 0 or
+        not has_valid_gravedig_cards(state.gravedig_pool, char)
+    )
+
+    if should_exit:
+        end_gravedigging(state)
 
 
 def finish_gravedig(state: GameState, player_id: str):
@@ -508,13 +588,7 @@ def finish_gravedig(state: GameState, player_id: str):
     if state.turn_subphase != "GRAVEDIGGING":
         raise ValueError("Must be in GRAVEDIGGING subphase")
 
-    # Discard remaining cards
-    state.discard_pile.extend(state.gravedig_pool)
-    state.gravedig_pool = []
-    state.gravedig_cards_taken = 0
-    state.turn_subphase = "BATTLE_ACTION"
-    if not state.dug_cards:
-        end_turn(state)
+    end_gravedigging(state)
 
 
 def resolve_gravedig(
