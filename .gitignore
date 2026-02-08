@@ -2,3 +2,4 @@
 /tests/__pycache__
 *.pyc
 /shovels_backend/.env
+/logs/shovels_ppo

@@ -1,0 +1,498 @@
+============================================================
+GAME REPLAY  |  Winner: agent  |  Turns: 101
+============================================================
+
+--- FINAL BOARD STATE ---
+  agent: QS[AH] TAPPED | (DEAD) | JH[] TAPPED
+  opponent DEAD: (DEAD) | (DEAD) | (DEAD)
+  Shop: [KH, 5H, 2H]  Deck: 37
+
+
+--- Turn 0 | Phase 1 | agent's turn ---
+  [agent] Draw: JS, 5D (from DECK, DECK)
+  [agent] Discard: JS
+  [agent] Play 5D -> Character 2
+
+--- Turn 1 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 7S, 5S (from DECK, DECK)
+  [opponent] Discard: 7S
+  [opponent] Play 5S -> Character 1
+
+--- Turn 2 | Phase 1 | agent's turn ---
+  [agent] Draw: 7S, AH (from DISCARD, DECK)
+  [agent] Discard: 7S
+  [agent] Play AH -> Character 0
+
+--- Turn 3 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 10C, 10H (from DECK, DECK)
+  [opponent] Discard: 10C
+  [opponent] Play 10H -> Character 1
+
+--- Turn 4 | Phase 1 | agent's turn ---
+  [agent] Draw: 10C, 7S (from DISCARD, DISCARD)
+  [agent] Discard: 7S
+  [agent] Play 10C -> Character 2
+
+--- Turn 5 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 7H, 4C (from DECK, DECK)
+  [opponent] Discard: 7H
+  [opponent] Play 4C -> Character 0
+
+--- Turn 6 | Phase 1 | agent's turn ---
+  [agent] Draw: 7H, 7S (from DISCARD, DISCARD)
+  [agent] Discard: 7S
+  [agent] Play 7H -> Character 2
+
+--- Turn 7 | Phase 1 | opponent's turn ---
+  [opponent] Draw: JH, 5C (from DECK, DECK)
+  [opponent] Discard: JH
+  [opponent] Play 5C -> Character 2
+
+--- Turn 8 | Phase 1 | agent's turn ---
+  [agent] Draw: JH, 7S (from DISCARD, DISCARD)
+  [agent] Discard: JH
+  [agent] Play 7S -> Character 0
+
+--- Turn 9 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 5C, AS (from DECK, DECK)
+  [opponent] Discard: 5C
+  [opponent] Play AS -> Character 1
+
+--- Turn 10 | Phase 1 | agent's turn ---
+  [agent] Draw: 5C, JH (from DISCARD, DISCARD)
+  [agent] Discard: JH
+  [agent] Play 5C -> Character 2
+
+--- Turn 11 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 4S, 9D (from DECK, DECK)
+  [opponent] Discard: 4S
+  [opponent] Play 9D -> Character 1
+
+--- Turn 12 | Phase 1 | agent's turn ---
+  [agent] Draw: 4S, JH (from DISCARD, DISCARD)
+  [agent] Discard: 4S
+  [agent] Play JH -> Character 2
+
+--- Turn 13 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8D, KD (from DECK, DECK)
+  [opponent] Discard: 8D
+  [opponent] Play KD -> Character 0
+
+--- Turn 14 | Phase 1 | agent's turn ---
+  [agent] Draw: JC, 8D (from DISCARD, DISCARD)
+  [agent] Discard: JC
+  [agent] Play 8D -> Character 2
+
+--- Turn 15 | Phase 1 | opponent's turn ---
+  [opponent] Draw: AD, 8H (from DECK, DECK)
+  [opponent] Discard: AD
+  [opponent] Play 8H -> Character 0
+
+--- Turn 16 | Phase 1 | agent's turn ---
+  [agent] Draw: AD, JC (from DISCARD, DISCARD)
+  [agent] Discard: AD
+  [agent] Play JC -> Character 2
+
+--- Turn 17 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 6D, 7H (from DECK, DECK)
+  [opponent] Discard: 6D
+  [opponent] Play 7H -> Character 1
+
+--- Turn 18 | Phase 1 | agent's turn ---
+  [agent] Draw: 6D, JH (from DISCARD, DISCARD)
+  [agent] Discard: 6D
+  [agent] Play JH -> Character 2
+
+--- Turn 19 | Phase 1 | opponent's turn ---
+  [opponent] Draw: QD, 6H (from DECK, DECK)
+  [opponent] Discard: QD
+  [opponent] Play 6H -> Character 2
+
+--- Turn 20 | Phase 1 | agent's turn ---
+  [agent] Draw: QD, JC (from DISCARD, DISCARD)
+  [agent] Discard: QD
+
+--- Turn 21 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8C, QC (from DECK, DECK)
+  [opponent] Discard: 8C
+  [opponent] Play QC -> Character 2
+
+--- Turn 22 | Phase 1 | agent's turn ---
+  [agent] Draw: KC, 8C (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play 8C -> Character 2
+
+--- Turn 23 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 2D, 3C (from DECK, DECK)
+  [opponent] Discard: 2D
+  [opponent] Play 3C -> Character 0
+
+--- Turn 24 | Phase 1 | agent's turn ---
+  [agent] Draw: 2D, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play 2D -> Character 2
+
+--- Turn 25 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 7S, 5S (from DECK, DECK)
+  [opponent] Discard: 7S
+  [opponent] Play 5S -> Character 0
+
+--- Turn 26 | Phase 1 | agent's turn ---
+  [agent] Draw: 7S, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play 7S -> Character 0
+
+--- Turn 27 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 4S, 3D (from DECK, DECK)
+  [opponent] Discard: 4S
+  [opponent] Play 3D -> Character 0
+
+--- Turn 28 | Phase 1 | agent's turn ---
+  [agent] Draw: 4S, KC (from DISCARD, DISCARD)
+  [agent] Discard: 4S
+  [agent] Play KC -> Character 0
+
+--- Turn 29 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 7C, 4D (from DECK, DECK)
+  [opponent] Discard: 7C
+  [opponent] Play 4D -> Character 1
+
+--- Turn 30 | Phase 1 | agent's turn ---
+  [agent] Draw: 7C, QD (from DISCARD, DISCARD)
+  [agent] Discard: QD
+  [agent] Play 7C -> Character 1
+
+--- Turn 31 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 6S, 6C (from DECK, DECK)
+  [opponent] Discard: 6S
+  [opponent] Play 6C -> Character 2
+
+--- Turn 32 | Phase 1 | agent's turn ---
+  [agent] Draw: 6S, QD (from DISCARD, DISCARD)
+  [agent] Discard: QD
+  [agent] Play 6S -> Character 1
+
+--- Turn 33 | Phase 1 | opponent's turn ---
+  [opponent] Draw: JC, KS (from DECK, DECK)
+  [opponent] Discard: JC
+  [opponent] Play KS -> Character 1
+
+--- Turn 34 | Phase 1 | agent's turn ---
+  [agent] Draw: KC, JC (from DISCARD, DISCARD)
+  [agent] Discard: JC
+
+--- Turn 35 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 3H, AH (from DECK, DECK)
+  [opponent] Discard: 3H
+  [opponent] Play AH -> Character 1
+
+--- Turn 36 | Phase 1 | agent's turn ---
+  [agent] Draw: 3H, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play 3H -> Character 0
+
+--- Turn 37 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 2S, 10H (from DECK, DECK)
+  [opponent] Discard: 2S
+  [opponent] Play 10H -> Character 2
+
+--- Turn 38 | Phase 1 | agent's turn ---
+  [agent] Draw: 2S, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play 2S -> Character 0
+
+--- Turn 39 | Phase 1 | opponent's turn ---
+  [opponent] Draw: QS, 4D (from DECK, DECK)
+  [opponent] Discard: QS
+  [opponent] Play 4D -> Character 1
+
+--- Turn 40 | Phase 1 | agent's turn ---
+  [agent] Draw: QS, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+  [agent] Play QS -> Character 0
+
+--- Turn 41 | Phase 1 | opponent's turn ---
+  [opponent] Draw: JD, 2H (from DECK, DECK)
+  [opponent] Discard: JD
+  [opponent] Play 2H -> Character 0
+
+--- Turn 42 | Phase 1 | agent's turn ---
+  [agent] Draw: JD, KC (from DISCARD, DISCARD)
+  [agent] Discard: KC
+
+--- Turn 43 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 4H, 10S (from DECK, DECK)
+  [opponent] Discard: 4H
+  [opponent] Play 10S -> Character 0
+
+--- Turn 44 | Phase 1 | agent's turn ---
+  [agent] Draw: 4H, JD (from DISCARD, DISCARD)
+  [agent] Discard: JD
+  [agent] Play 4H -> Character 0
+
+--- Turn 45 | Phase 1 | opponent's turn ---
+  [opponent] Draw: AC, 8S (from DECK, DECK)
+  [opponent] Discard: AC
+  [opponent] Play 8S -> Character 1
+
+--- Turn 46 | Phase 1 | agent's turn ---
+  [agent] Draw: AC, JD (from DISCARD, DISCARD)
+  [agent] Discard: JD
+  [agent] Play AC -> Character 1
+
+--- Turn 47 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8H, JS (from DECK, DECK)
+  [opponent] Discard: 8H
+  [opponent] Play JS -> Character 0
+
+--- Turn 48 | Phase 1 | agent's turn ---
+  [agent] Draw: KD, 8H (from DISCARD, DISCARD)
+  [agent] Discard: KD
+  [agent] Play 8H -> Character 1
+
+--- Turn 49 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8C, 5D (from DECK, DECK)
+  [opponent] Discard: 8C
+  [opponent] Play 5D -> Character 0
+
+--- Turn 50 | Phase 1 | agent's turn ---
+  [agent] Draw: 8C, KD (from DISCARD, DISCARD)
+  [agent] Discard: KD
+  [agent] Play 8C -> Character 1
+
+--- Turn 51 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 9S, 7D (from DECK, DECK)
+  [opponent] Discard: 9S
+  [opponent] Play 7D -> Character 2
+
+--- Turn 52 | Phase 1 | agent's turn ---
+  [agent] Draw: 9S, KD (from DISCARD, DISCARD)
+  [agent] Discard: KD
+  [agent] Play 9S -> Character 0
+
+--- Turn 53 | Phase 1 | opponent's turn ---
+  [opponent] Draw: KH, 2D (from DECK, DECK)
+  [opponent] Discard: KH
+  [opponent] Play 2D -> Character 2
+
+--- Turn 54 | Phase 1 | agent's turn ---
+  [agent] Draw: KH, KD (from DISCARD, DISCARD)
+  [agent] Discard: KD
+
+--- Turn 55 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 3H, 2S (from DECK, DECK)
+  [opponent] Discard: 3H
+  [opponent] Play 2S -> Character 1
+
+--- Turn 56 | Phase 1 | agent's turn ---
+  [agent] Draw: 3H, KH (from DISCARD, DISCARD)
+  [agent] Discard: KH
+  [agent] Play 3H -> Character 0
+
+--- Turn 57 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 9S, QC (from DECK, DECK)
+  [opponent] Discard: 9S
+  [opponent] Play QC -> Character 0
+
+--- Turn 58 | Phase 1 | agent's turn ---
+  [agent] Draw: JS, 9S (from DISCARD, DISCARD)
+  [agent] Discard: 9S
+  [agent] Play JS -> Character 1
+
+--- Turn 59 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8S, 4C (from DECK, DECK)
+  [opponent] Discard: 8S
+  [opponent] Play 4C -> Character 1
+
+--- Turn 60 | Phase 1 | agent's turn ---
+  [agent] Draw: 8S, JH (from DISCARD, DISCARD)
+  [agent] Discard: JH
+  [agent] Play 8S -> Character 0
+
+--- Turn 61 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 5H, 9D (from DECK, DECK)
+  [opponent] Discard: 5H
+  [opponent] Play 9D -> Character 2
+
+--- Turn 62 | Phase 1 | agent's turn ---
+  [agent] Draw: 5H, JH (from DISCARD, DISCARD)
+  [agent] Discard: JH
+  [agent] Play 5H -> Character 0
+
+--- Turn 63 | Phase 1 | opponent's turn ---
+  [opponent] Draw: KD, 2C (from DECK, DECK)
+  [opponent] Discard: KD
+  [opponent] Play 2C -> Character 0
+
+--- Turn 64 | Phase 1 | agent's turn ---
+  [agent] Draw: KD, JH (from DISCARD, DISCARD)
+  [agent] Discard: JH
+
+--- Turn 65 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 6D, 3D (from DECK, DECK)
+  [opponent] Discard: 6D
+  [opponent] Play 3D -> Character 2
+
+--- Turn 66 | Phase 1 | agent's turn ---
+  [agent] Draw: 6D, KD (from DISCARD, DISCARD)
+  [agent] Discard: KD
+  [agent] Play 6D -> Character 1
+
+--- Turn 67 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 3C, 9C (from DECK, DECK)
+  [opponent] Discard: 3C
+  [opponent] Play 9C -> Character 2
+
+--- Turn 68 | Phase 1 | agent's turn ---
+  [agent] Draw: 3C, KD (from DISCARD, DISCARD)
+  [agent] Discard: KD
+  [agent] Play 3C -> Character 0
+
+--- Turn 69 | Phase 1 | opponent's turn ---
+  [opponent] Draw: AC, KS (from DECK, DECK)
+  [opponent] Discard: AC
+  [opponent] Play KS -> Character 2
+
+--- Turn 70 | Phase 1 | agent's turn ---
+  [agent] Draw: QC, AC (from DISCARD, DISCARD)
+  [agent] Discard: AC
+  [agent] Play QC -> Character 1
+
+--- Turn 71 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 9C, 7C (from DECK, DECK)
+  [opponent] Discard: 9C
+  [opponent] Play 7C -> Character 2
+
+--- Turn 72 | Phase 1 | agent's turn ---
+  [agent] Draw: 9C, JS (from DISCARD, DISCARD)
+  [agent] Discard: JS
+  [agent] Play 9C -> Character 1
+
+--- Turn 73 | Phase 1 | opponent's turn ---
+  [opponent] Draw: 8D, 10C (from DECK, DECK)
+  [opponent] Discard: 8D
+  [opponent] Play 10C -> Character 0
+
+--- Turn 74 | Phase 1 | agent's turn ---
+  [agent] Draw: 8D, JS (from DISCARD, DISCARD)
+  [agent] Discard: JS
+  [agent] Play 8D -> Character 1
+
+--- Turn 75 | Phase 1 | opponent's turn ---
+  [opponent] Draw: JS, KH (from DISCARD, DECK)
+  [opponent] Discard: JS
+  [opponent] Play KH -> Character 0
+
+############################################################
+### PHASE 2 BEGINS  |  First player: opponent
+############################################################
+
+  agent: QS[AH, 7S, 7S, 3H, 2S, 4H, 9S, 3H, 8S, 5H, 3C] | QC[7C, 6S, AC, 8H, 8C, 6D, 9C, 8D] | JH[5D, 10C, 7H, 5C, 8D, 8C, 2D]
+  opponent: KH[4C, 8H, 3C, 5S, 3D, 2H, 10S, 5D, 2C, 10C] | KS[5S, 10H, AS, 9D, 7H, 4D, AH, 4D, 8S, 2S, 4C] | KS[5C, 6H, 6C, 10H, 7D, 2D, 9D, 3D, 9C, 7C]
+
+
+--- Turn 76 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 2 plays [7C, 9C, 3D, 9D, 2D, 7D] CLUBS rank=16 -> agent char 2
+  Heart broken: 7H on agent char 2 (dmg=16 >= rank=7+shield=0)
+
+--- Turn 77 | Phase 2 | agent's turn ---
+  [agent] Tap Hero: QC
+  Heart broken: 10H on opponent char 1 (dmg=10 >= rank=10+shield=0)
+  Heart broken: 2H on opponent char 0 (dmg=10 >= rank=2+shield=0)
+
+--- Turn 78 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 1 plays [4D, 7H, 9D] DIAMONDS rank=13
+  [opponent] Buy AD ($10) -> char 1
+  [opponent] Shopping ends ($3 unspent)
+
+--- Turn 79 | Phase 2 | agent's turn ---
+  [agent] Action: char 1 plays [8D, 9C] CLUBS rank=9 -> opponent char 1
+
+--- Turn 80 | Phase 2 | opponent's turn ---
+  [opponent] Tap Hero: KS
+
+--- Turn 81 | Phase 2 | agent's turn ---
+  [agent] Action: char 2 plays [10C, 5D] CLUBS rank=10 -> opponent char 2
+  Heart broken: 10H on opponent char 2 (dmg=10 >= rank=10+shield=0)
+
+--- Turn 82 | Phase 2 | opponent's turn ---
+  [opponent] Tap Hero: KH
+
+--- Turn 83 | Phase 2 | agent's turn ---
+  [agent] Action: char 1 plays [6D, 8C, 8H, AC] HEARTS rank=8
+
+--- Turn 84 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 0 plays [3D, 5S, 3C, 8H] SPADES rank=5
+  [opponent] Dig: 1 cards flagged
+  [opponent] Action: char 0 plays [4C] CLUBS rank=4 -> agent char 1 (recursive)
+  ** agent char 1 (QC) DIES: HEART_OVERWHELM **
+  [opponent] SPADE_DIG_END: {}
+
+--- Turn 85 | Phase 2 | agent's turn ---
+  [agent] Tap Hero: JH
+
+--- Turn 86 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 2 plays [6C, 6H] CLUBS rank=6 -> agent char 1
+
+--- Turn 87 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [3C, 5H] CLUBS rank=3 -> opponent char 0
+  ** opponent char 0 (KH) DIES: HEART_OVERWHELM **
+
+--- Turn 88 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 1 plays [AD] DIAMONDS rank=10
+  [opponent] Shopping ends ($10 unspent)
+
+--- Turn 89 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [8S, 3H] HEARTS rank=3
+
+--- Turn 90 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 2 plays [5C] CLUBS rank=5 -> agent char 1
+
+--- Turn 91 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [9S, 4H] HEARTS rank=4
+
+--- Turn 92 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 1 plays [AS, 10H] HEARTS rank=10
+
+--- Turn 93 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [2S, 3H] HEARTS rank=3
+
+--- Turn 94 | Phase 2 | opponent's turn ---
+  [opponent] Face Strike -> agent char 0
+  ** opponent char 0 (H) DIES: SUICIDE_STRIKE **
+
+--- Turn 95 | Phase 2 | agent's turn ---
+  [agent] Tap Hero: QS
+  [agent] Gravedig take: 6H (1/2)
+  [agent] Gravedig take: 6D (2/2)
+
+--- Turn 96 | Phase 2 | opponent's turn ---
+  [opponent] Action: char 1 plays [5S] SPADES rank=5
+  [opponent] Dig: 0 cards flagged
+  [opponent] SPADE_DIG_END: {}
+
+--- Turn 97 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [6D, 6H] HEARTS rank=6
+
+--- Turn 98 | Phase 2 | opponent's turn ---
+  [opponent] Face Strike -> agent char 0
+  ** opponent char 0 (H) DIES: SUICIDE_STRIKE **
+
+--- Turn 99 | Phase 2 | agent's turn ---
+  [agent] Action: char 0 plays [7S, 7S] SPADES rank=14
+  [agent] Dig: 1 cards flagged
+  [agent] Face Strike -> opponent char 2
+  ** opponent char 2 (KS) DIES: HEART_OVERWHELM **
+  [agent] SPADE_DIG_END: {}
+
+--- Turn 100 | Phase 2 | opponent's turn ---
+  [opponent] Tap Hero: KS
+
+--- Turn 101 | Phase 2 | agent's turn ---
+  [agent] Face Strike -> opponent char 1
+  ** opponent char 1 (KS) DIES: HEART_OVERWHELM **
+  *** PLAYER opponent ELIMINATED (HEART_OVERWHELM) ***
+
+============================================================
+GAME OVER  |  Winner: agent
+============================================================

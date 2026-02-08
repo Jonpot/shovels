@@ -250,6 +250,10 @@ def buy_card(
                     state.shop_row[slot_index] = None
                     if state.free_buys_remaining > 0:
                         state.free_buys_remaining -= 1
+                    # Check auto-exit after wasted free buy
+                    if state.turn_subphase == "SHOP_FREE_BUY" and state.free_buys_remaining == 0:
+                        refill_shop_row(state)
+                        end_turn(state)
                     return
                 else:
                     raise ValueError("Can only revive dead characters with Jack")
@@ -268,6 +272,10 @@ def buy_card(
                     state.shop_row[slot_index] = None
                     if state.free_buys_remaining > 0:
                         state.free_buys_remaining -= 1
+                    # Check auto-exit after wasted free buy
+                    if state.turn_subphase == "SHOP_FREE_BUY" and state.free_buys_remaining == 0:
+                        refill_shop_row(state)
+                        end_turn(state)
                     return
                 else:
                     raise ValueError(f"Cannot upgrade {char.rank} with {card.face_rank}")
@@ -713,9 +721,12 @@ def perform_action(
         state,
         "ACTION",
         {
+            "char_index": char_index,
             "action_suit": action_suit,
             "total_rank": total_rank,
             "top_n_cards": top_n_cards,
+            "cards": [c.model_dump() for c in action_cards],
+            "target_info": target_info,
             "is_recursive": len(dug_indices) > 0 if dug_indices else False,
         },
     )
@@ -947,10 +958,12 @@ def attack_heart(
                         "target_player_id": target_player_id,
                         "target_char_index": target_char_index,
                         "damage": damage,
+                        "heart_rank": card.rank,
                         "shield": target_char.temporary_shield,
                     },
                 )
-                break
+            # Topmost heart always stops the search — it either breaks or absorbs
+            break
 
     # If no Heart Card was found to absorb damage, the character dies (if damage >= 1)
     if not heart_found and damage >= 1:
@@ -1205,12 +1218,27 @@ def transition_to_phase_2(state: GameState):
     else:
         state.current_turn_index = 0
 
+    # Capture board state at phase transition for replay logs
+    board_snapshot = {}
+    for p in state.players:
+        chars_data = []
+        for c in p.characters:
+            chars_data.append({
+                "rank": c.rank,
+                "suit": c.suit.value,
+                "is_dead": c.is_dead,
+                "is_tapped": c.is_tapped,
+                "stack": [card.model_dump() for card in c.stack],
+            })
+        board_snapshot[p.id] = chars_data
+
     log_event(
         state,
         "PHASE_TRANSITION",
         {
             "new_phase": 2,
             "first_player_id": state.players[state.current_turn_index].id,
+            "board": board_snapshot,
             "spade_tiebreaker": {
                 str(k): [state.players[pid].id for pid in v]
                 for k, v in spade_ranks.items()
