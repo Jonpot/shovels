@@ -24,6 +24,17 @@ class Card(BaseModel):
             return {"J": 3, "Q": 4, "K": 5}[self.face_rank]
         return 10 if self.is_ace else self.rank
 
+class PendingAttack(BaseModel):
+    """Stores attack context while waiting for defender's reaction."""
+    attacker_id: str
+    target_player_id: str
+    target_char_index: int
+    damage: int
+    previous_subphase: str
+    source: str = ""  # "perform", "strike", "tap"
+    remaining_tap_targets: List[Dict] = Field(default_factory=list)
+
+
 class Character(BaseModel):
     uid: str = Field(default_factory=lambda: uuid.uuid4().hex)
     rank: str  # J, Q, K (or "" when dead)
@@ -65,6 +76,8 @@ class GameState(BaseModel):
     events: List[Dict] = Field(default_factory=list)
     winner_id: Optional[str] = None
     is_over: bool = False
+    pending_attack: Optional[PendingAttack] = None
+    enable_reactions: bool = False
 
 def initialize_full_pool() -> List[Card]:
     """Creates the full 104-card pool (2 standard 52-card decks)."""

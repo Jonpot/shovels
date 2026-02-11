@@ -1,0 +1,33 @@
+=== Scenario: early_phase2 ===
+Description: Early Phase 2: full stacks, all characters alive
+Value estimate: 0.1151
+Valid actions: 68
+
+Top 10 actions:
+  [214] Tap char[0] clubs->opp[0]                      0.9982
+  [102] Perform char[1] top5 clubs->opp[2]             0.0005
+  [ 96] Perform char[1] top4 clubs->opp[2]             0.0005
+  [ 24] Perform char[0] top2 clubs->opp[2]             0.0003
+  [158] Perform char[2] top5 hearts                    0.0002
+  [ 47] Perform char[0] top6 clubs->opp[1]             0.0001
+  [ 90] Perform char[1] top3 clubs->opp[2]             0.0001
+  [215] Tap char[0] clubs->opp[1]                      0.0000
+  [ 32] Perform char[0] top4 hearts                    0.0000
+  [ 42] Perform char[0] top5 clubs->opp[2]             0.0000
+
+Top 15 salient features:
+  subphase_battle_action                         saliency=0.00671  value=1.000
+  own_char0_suit_clubs                           saliency=0.00575  value=1.000
+  opp_char0_suit_clubs                           saliency=0.00540  value=1.000
+  strat_own_char1_top_hearts                     saliency=0.00427  value=1.000
+  phase                                          saliency=0.00394  value=1.000
+  opp_char0_rank_K                               saliency=0.00359  value=1.000
+  opp_char1_suit_hearts                          saliency=0.00345  value=1.000
+  opp_char0_s3_hearts                            saliency=0.00334  value=1.000
+  own_char2_suit_spades                          saliency=0.00313  value=1.000
+  own_char1_suit_diamonds                        saliency=0.00291  value=1.000
+  strat_opp_char0_top_heart_rank                 saliency=0.00282  value=0.800
+  opp_char1_s3_diamonds                          saliency=0.00270  value=1.000
+  own_char1_s1_diamonds                          saliency=0.00265  value=1.000
+  opp_char0_s0_hearts                            saliency=0.00252  value=1.000
+  opp_char2_s2_diamonds                          saliency=0.00243  value=1.000

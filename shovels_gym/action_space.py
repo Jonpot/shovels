@@ -1,9 +1,9 @@
 """
 Action encoding/decoding and masking for the Shovels Gymnasium environment.
 
-Flat Discrete(240) action space with boolean masking for MaskablePPO.
+Flat Discrete(242) action space with boolean masking for MaskablePPO.
 
-Action Encoding Table (240 total):
+Action Encoding Table (242 total):
 | Section | Actions | Indices   | Subphase            | Description                              |
 |---------|---------|-----------|---------------------|------------------------------------------|
 | A: Draw | 3       | 0-2       | DRAW                | [DECK,DECK],[DISCARD,DECK],[DISCARD,DISC]|
@@ -17,12 +17,14 @@ Action Encoding Table (240 total):
 | I: Gravedig Sel | 5| 233-237   | GRAVEDIGGING        | Select pool card index 0-4               |
 | J: Gravedig End | 1| 238       | GRAVEDIGGING        | Finish early                             |
 | K: End Turn | 1    | 239       | Multiple            | End current turn/subphase                |
+| L: React Tap | 1   | 240       | DEFENSE_REACTION    | Tap hearts hero to defend                |
+| M: React Pass | 1  | 241       | DEFENSE_REACTION    | Pass on defense reaction                 |
 """
 
 import numpy as np
 from shovels_engine.models import GameState, Suit, Card
 
-ACTION_SPACE_SIZE = 240
+ACTION_SPACE_SIZE = 242
 
 # Section boundaries
 DRAW_START = 0       # 3 actions: 0-2
@@ -36,6 +38,8 @@ REFRESH_IDX = 232    # 1 action
 GRAVEDIG_SEL_START = 233  # 5 actions: 233-237
 GRAVEDIG_END_IDX = 238    # 1 action
 END_TURN_IDX = 239        # 1 action
+REACT_TAP_IDX = 240       # 1 action
+REACT_PASS_IDX = 241      # 1 action
 
 # Suit target encoding for Section D
 SUIT_TARGETS = [Suit.DIAMONDS, Suit.HEARTS, Suit.SPADES,
@@ -174,6 +178,12 @@ def decode_action(action: int, state: GameState, player_id: str) -> dict:
     elif action == END_TURN_IDX:
         return {"type": "end_turn"}
 
+    elif action == REACT_TAP_IDX:
+        return {"type": "react_tap"}
+
+    elif action == REACT_PASS_IDX:
+        return {"type": "react_pass"}
+
     raise ValueError(f"Invalid action index: {action}")
 
 
@@ -303,15 +313,15 @@ def action_masks(state: GameState, player_id: str) -> np.ndarray:
             char = player.characters[char_idx]
             if char.is_dead or char.is_tapped:
                 continue
-            if char.suit != Suit.CLUBS:
-                # Non-clubs: simple tap
-                mask[TAP_START + char_idx] = True
-            else:
+            if char.suit == Suit.CLUBS:
                 # Clubs: need living targets
                 living_opp = [i for i, c in enumerate(opponent.characters) if not c.is_dead]
                 for primary_target in living_opp:
                     if primary_target < 3:
                         mask[TAP_START + 3 + char_idx * 3 + primary_target] = True
+            elif char.suit != Suit.HEARTS:
+                # Non-clubs, non-hearts: simple tap (hearts are reaction-only)
+                mask[TAP_START + char_idx] = True
 
     # ---- Section G: Shop Buy (Phase 2, SHOPPING or SHOP_FREE_BUY) ----
     if state.phase == 2 and subphase in ("SHOPPING", "SHOP_FREE_BUY"):
@@ -372,11 +382,101 @@ def action_masks(state: GameState, player_id: str) -> np.ndarray:
         mask[END_TURN_IDX] = True
     # Phase 1: can't voluntarily end turn (actions are mandatory per subphase)
 
+    # ---- Section L: Defense Reaction (Phase 2, DEFENSE_REACTION) ----
+    if state.phase == 2 and subphase == "DEFENSE_REACTION":
+        pa = state.pending_attack
+        if pa is not None and pa.target_player_id == player_id:
+            if pa.target_char_index < len(player.characters):
+                target_char = player.characters[pa.target_char_index]
+                if not target_char.is_dead and not target_char.is_tapped and target_char.suit == Suit.HEARTS:
+                    mask[REACT_TAP_IDX] = True
+            mask[REACT_PASS_IDX] = True
+
     # Ensure at least one action is valid (fallback to end_turn)
     if not mask.any():
         mask[END_TURN_IDX] = True
 
     return mask
+
+
+# ---------------------------------------------------------------------------
+# Human-readable action names and categories (for interpretability)
+# ---------------------------------------------------------------------------
+
+def _build_action_names() -> list[str]:
+    names = [""] * ACTION_SPACE_SIZE
+
+    # Section A: Draw [0-2]
+    names[0] = "Draw: deck+deck"
+    names[1] = "Draw: discard+deck"
+    names[2] = "Draw: discard+discard"
+
+    # Section B: Discard [3-4]
+    names[3] = "Discard hand[0]"
+    names[4] = "Discard hand[1]"
+
+    # Section C: Play [5-12]
+    for hi in range(2):
+        for ci in range(3):
+            names[PLAY_START + hi * 3 + ci] = f"Play hand[{hi}]->char[{ci}]"
+    names[PLAY_START + 6] = "Discard 2nd face hand[0]"
+    names[PLAY_START + 7] = "Discard 2nd face hand[1]"
+
+    # Section D: Perform [13-192]
+    suit_labels = ["diamonds", "hearts", "spades", "clubs->opp[0]", "clubs->opp[1]", "clubs->opp[2]"]
+    for ci in range(3):
+        for tn in range(10):
+            for st in range(6):
+                idx = PERFORM_START + ci * 60 + tn * 6 + st
+                names[idx] = f"Perform char[{ci}] top{tn+1} {suit_labels[st]}"
+
+    # Section E: Strike [193-210]
+    for ci in range(3):
+        for tc in range(3):
+            for da in range(2):
+                idx = STRIKE_START + ci * 6 + tc * 2 + da
+                disc = "+discard_all" if da else ""
+                names[idx] = f"Strike char[{ci}]->opp[{tc}]{disc}"
+
+    # Section F: Tap Hero [211-222]
+    for ci in range(3):
+        names[TAP_START + ci] = f"Tap char[{ci}] (non-clubs)"
+    for ci in range(3):
+        for pt in range(3):
+            names[TAP_START + 3 + ci * 3 + pt] = f"Tap char[{ci}] clubs->opp[{pt}]"
+
+    # Section G: Buy [223-231]
+    for si in range(3):
+        for ci in range(3):
+            names[BUY_START + si * 3 + ci] = f"Buy shop[{si}]->char[{ci}]"
+
+    # Section H-K
+    names[REFRESH_IDX] = "Refresh shop"
+    for gi in range(5):
+        names[GRAVEDIG_SEL_START + gi] = f"Gravedig select[{gi}]"
+    names[GRAVEDIG_END_IDX] = "Gravedig end"
+    names[END_TURN_IDX] = "End turn"
+    names[REACT_TAP_IDX] = "React: tap hearts"
+    names[REACT_PASS_IDX] = "React: pass"
+
+    return names
+
+
+ACTION_NAMES: list[str] = _build_action_names()
+
+ACTION_CATEGORIES: dict[str, tuple[int, int]] = {
+    "draw": (DRAW_START, DISCARD_START),
+    "discard": (DISCARD_START, PLAY_START),
+    "play": (PLAY_START, PERFORM_START),
+    "perform": (PERFORM_START, STRIKE_START),
+    "strike": (STRIKE_START, TAP_START),
+    "tap": (TAP_START, BUY_START),
+    "buy": (BUY_START, REFRESH_IDX),
+    "refresh": (REFRESH_IDX, GRAVEDIG_SEL_START),
+    "gravedig": (GRAVEDIG_SEL_START, END_TURN_IDX),
+    "end_turn": (END_TURN_IDX, REACT_TAP_IDX),
+    "react": (REACT_TAP_IDX, ACTION_SPACE_SIZE),
+}
 
 
 def _can_take_gravedig(card: Card, char) -> bool:

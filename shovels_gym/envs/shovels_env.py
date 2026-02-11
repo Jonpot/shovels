@@ -1,7 +1,7 @@
 """
 Gymnasium environment for the Shovels card game.
 
-Agent is always player index 0. Opponent is played by RandomAgent.
+Agent is always player index 0. Opponent is configurable (defaults to RandomAgent).
 """
 
 import random as py_random
@@ -12,16 +12,11 @@ from gymnasium import spaces
 
 from shovels_engine.models import setup_game, GameState
 from shovels_engine.agents import RandomAgent
-from shovels_engine.engine import (
-    draw_cards, discard_card, play_card,
-    perform_action, apply_face_strike,
-    tap_hero_power, buy_card, refresh_shop,
-    select_gravedig_card, finish_gravedig,
-    end_turn,
-)
+from shovels_engine.engine import end_turn
 from shovels_gym.action_space import (
     ACTION_SPACE_SIZE, action_masks, decode_action,
 )
+from shovels_gym.action_utils import execute_action
 from shovels_gym.obs_space import OBS_SIZE, encode_observation
 
 
@@ -34,7 +29,7 @@ class ShovelsEnv(gym.Env):
 
     metadata = {"render_modes": []}
 
-    def __init__(self, max_steps=500, **kwargs):
+    def __init__(self, max_steps=500, opponent_agent=None, **kwargs):
         super().__init__()
         self.max_steps = max_steps
 
@@ -44,8 +39,12 @@ class ShovelsEnv(gym.Env):
         self.action_space = spaces.Discrete(ACTION_SPACE_SIZE)
 
         self.state: GameState = None  # type: ignore
-        self.opponent_agent = RandomAgent()
+        self.opponent_agent = opponent_agent or RandomAgent()
         self.step_count = 0
+
+    def set_opponent(self, agent):
+        """Swap the opponent agent (used by self-play callback between episodes)."""
+        self.opponent_agent = agent
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -53,6 +52,7 @@ class ShovelsEnv(gym.Env):
         if seed is not None:
             py_random.seed(seed)
         self.state = setup_game([AGENT_ID, OPPONENT_ID])
+        self.state.enable_reactions = True
         self.step_count = 0
 
         # If opponent goes first, run their turns
@@ -107,60 +107,39 @@ class ShovelsEnv(gym.Env):
     def _execute_action(self, action: int):
         """Decode and execute a single action."""
         decoded = decode_action(action, self.state, AGENT_ID)
-        action_type = decoded["type"]
-
-        if action_type == "draw":
-            draw_cards(self.state, AGENT_ID, decoded["sources"])
-        elif action_type == "discard":
-            discard_card(self.state, AGENT_ID, decoded["card_index"])
-        elif action_type == "play":
-            play_card(self.state, AGENT_ID, decoded["card_index"], decoded["character_index"])
-        elif action_type == "perform":
-            perform_action(
-                self.state, AGENT_ID,
-                decoded["char_index"], decoded["top_n_cards"],
-                decoded["action_suit"],
-                dug_indices=decoded.get("dug_indices"),
-                target_info=decoded.get("target_info"),
-            )
-        elif action_type == "strike":
-            apply_face_strike(
-                self.state, AGENT_ID,
-                decoded["char_index"],
-                decoded["target_player_id"],
-                decoded["target_char_index"],
-                discard_all_cards=decoded["discard_all_cards"],
-            )
-        elif action_type == "tap":
-            tap_hero_power(
-                self.state, AGENT_ID,
-                decoded["char_index"],
-                target_info=decoded.get("target_info"),
-            )
-        elif action_type == "buy":
-            buy_card(
-                self.state, AGENT_ID,
-                decoded["slot_index"], decoded["char_index"],
-            )
-        elif action_type == "refresh":
-            refresh_shop(self.state, AGENT_ID)
-        elif action_type == "gravedig_select":
-            aci = self.state.active_character_index
-            if aci is not None:
-                select_gravedig_card(self.state, AGENT_ID, aci, decoded["card_index"])
-        elif action_type == "gravedig_end":
-            finish_gravedig(self.state, AGENT_ID)
-        elif action_type == "end_turn":
-            end_turn(self.state)
+        execute_action(decoded, self.state, AGENT_ID)
 
     def _run_opponent_turns(self):
-        """Run opponent turns via RandomAgent until it's the agent's turn or game over."""
+        """Run opponent turns until it's the agent's turn or game over.
+
+        Handles DEFENSE_REACTION: if agent needs to react, returns control.
+        If opponent needs to react, handles it automatically.
+        """
         safety = 0
-        while (
-            not self.state.is_over
-            and self.state.players[self.state.current_turn_index].id == OPPONENT_ID
-            and safety < 100
-        ):
+        while not self.state.is_over and safety < 200:
+            # Check for defense reaction first
+            if self.state.turn_subphase == "DEFENSE_REACTION":
+                pa = self.state.pending_attack
+                if pa and pa.target_player_id == AGENT_ID:
+                    break  # Agent needs to react — return control
+                elif pa and pa.target_player_id == OPPONENT_ID:
+                    # Opponent reacts automatically
+                    try:
+                        self.opponent_agent.act(self.state, OPPONENT_ID)
+                    except Exception:
+                        # Auto-pass on error
+                        from shovels_engine.engine import resolve_defense_reaction
+                        try:
+                            resolve_defense_reaction(self.state, OPPONENT_ID, tap=False)
+                        except Exception:
+                            break
+                    safety += 1
+                    continue
+
+            current_id = self.state.players[self.state.current_turn_index].id
+            if current_id != OPPONENT_ID:
+                break  # Agent's turn
+
             try:
                 self.opponent_agent.act(self.state, OPPONENT_ID)
             except Exception:

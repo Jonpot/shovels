@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from .models import GameState, Card, Character, Player, Suit
+from .models import GameState, Card, Character, Player, Suit, PendingAttack
 import collections
 import random
 
@@ -402,26 +402,19 @@ def tap_hero_power(
         if len(targets) > num_strikes:
             raise ValueError(f"{char.rank} of Clubs can only hit {num_strikes} targets")
 
-        # Group targets by player and process them in descending order of character index
-        # to prevent index-shifting bugs.
-        from collections import defaultdict
-
-        player_targets = defaultdict(list)
+        # Build flat attack list for sequential processing (supports reaction pauses)
+        all_attacks = []
         for t in targets:
-            player_targets[t["target_player_id"]].append(t["target_char_index"])
+            all_attacks.append({"player_id": t["target_player_id"], "char_index": t["target_char_index"]})
 
-        for target_p_id, char_indices in player_targets.items():
-            # Process each unique slot in descending order to prevent shifting other slots
-            unique_slots = sorted(list(set(char_indices)), reverse=True)
-            for slot_idx in unique_slots:
-                hits = char_indices.count(slot_idx)
-                for _ in range(hits):
-                    # Re-check existence before each hit on this slot
-                    target_p = next(p for p in state.players if p.id == target_p_id)
-                    if slot_idx < len(target_p.characters):
-                        attack_heart(state, player_id, target_p_id, slot_idx, 10)
-                    else:
-                        break  # Slot already removed
+        for i, atk in enumerate(all_attacks):
+            target_p = next(p for p in state.players if p.id == atk["player_id"])
+            if atk["char_index"] < len(target_p.characters) and not target_p.characters[atk["char_index"]].is_dead:
+                paused = attack_heart(state, player_id, atk["player_id"], atk["char_index"], 10)
+                if paused:
+                    state.pending_attack.source = "tap"
+                    state.pending_attack.remaining_tap_targets = all_attacks[i + 1:]
+                    return  # Reaction needed
 
     elif char.suit == Suit.DIAMONDS:
         # Free purchases: Set counter and transition to subphase
@@ -764,13 +757,16 @@ def resolve_suit_effect(
     if suit == Suit.CLUBS:
         if not target_info:
             raise ValueError("Target info required for Clubs")
-        attack_heart(
+        paused = attack_heart(
             state,
             player_id,
             target_info["target_player_id"],
             target_info["target_char_index"],
             total_rank,
         )
+        if paused:
+            state.pending_attack.source = "perform"
+            return
     elif suit == Suit.DIAMONDS:
         player = next(p for p in state.players if p.id == player_id)
         player.coins += total_rank
@@ -852,7 +848,12 @@ def apply_face_strike(
     )
 
     # Face strike deals 1 damage - can be blocked by heart cards
-    attack_heart(state, player_id, target_player_id, target_char_index, 1)
+    paused = attack_heart(state, player_id, target_player_id, target_char_index, 1)
+    if paused:
+        state.pending_attack.source = "strike"
+        state.action_taken_this_turn = True
+        state.active_character_index = char_index
+        return
 
     # Check if we actually removed a character (for suicide strike logic)
     removed = state.cards_removed_this_turn
@@ -904,13 +905,49 @@ def attack_heart(
     target_player_id: str,
     target_char_index: int,
     damage: int,
-):
+) -> bool:
+    """Attack a character's heart protection.
+
+    Returns True if paused for DEFENSE_REACTION, False if resolved immediately.
+    """
     target_player = next(p for p in state.players if p.id == target_player_id)
     target_char = target_player.characters[target_char_index]
 
     # FIX-6: Cannot attack dead characters
     if target_char.is_dead:
         raise ValueError("Cannot target dead character")
+
+    # Check if defense reaction is available
+    if (state.enable_reactions
+            and not target_char.is_tapped
+            and target_char.suit == Suit.HEARTS):
+        state.pending_attack = PendingAttack(
+            attacker_id=player_id,
+            target_player_id=target_player_id,
+            target_char_index=target_char_index,
+            damage=damage,
+            previous_subphase=state.turn_subphase,
+        )
+        state.turn_subphase = "DEFENSE_REACTION"
+        return True  # Paused for reaction
+
+    _resolve_attack(state, player_id, target_player_id, target_char_index, damage)
+    return False
+
+
+def _resolve_attack(
+    state: GameState,
+    player_id: str,
+    target_player_id: str,
+    target_char_index: int,
+    damage: int,
+):
+    """Resolve attack damage against a character's heart protection."""
+    target_player = next(p for p in state.players if p.id == target_player_id)
+    target_char = target_player.characters[target_char_index]
+
+    if target_char.is_dead:
+        return
 
     if not target_char.stack:
         if damage >= 1:
@@ -925,12 +962,10 @@ def attack_heart(
                     "suit": target_char.suit,
                 },
             )
-            # FIX-6: Mark character as dead instead of removing
             target_char.is_dead = True
             target_char.stack = []
             target_char.rank = ""
             state.cards_removed_this_turn = True
-            # Check if all characters are dead
             if not any(c for c in target_player.characters if not c.is_dead):
                 target_player.is_alive = False
                 log_event(
@@ -962,10 +997,8 @@ def attack_heart(
                         "shield": target_char.temporary_shield,
                     },
                 )
-            # Topmost heart always stops the search — it either breaks or absorbs
             break
 
-    # If no Heart Card was found to absorb damage, the character dies (if damage >= 1)
     if not heart_found and damage >= 1:
         log_event(
             state,
@@ -978,12 +1011,10 @@ def attack_heart(
                 "suit": target_char.suit,
             },
         )
-        # Mark character as dead instead of removing (FIX-6)
         target_char.is_dead = True
         target_char.stack = []
         target_char.rank = ""
         state.cards_removed_this_turn = True
-        # Check if all characters are dead
         if not any(c for c in target_player.characters if not c.is_dead):
             target_player.is_alive = False
             log_event(
@@ -992,6 +1023,67 @@ def attack_heart(
                 {"player_id": target_player_id, "reason": "HEART_OVERWHELM"},
             )
             check_win_condition(state)
+
+
+def resolve_defense_reaction(state: GameState, defender_id: str, tap: bool):
+    """Resolve the defender's reaction to a pending attack.
+
+    If tap=True, the defender taps their Hearts hero to add temporary shield
+    (J=3, Q=5, K=10) before the attack resolves.
+    """
+    pa = state.pending_attack
+    if pa is None:
+        raise ValueError("No pending attack to resolve")
+
+    target_player = next(p for p in state.players if p.id == pa.target_player_id)
+    target_char = target_player.characters[pa.target_char_index]
+
+    # Apply tap if chosen and valid
+    if tap and not target_char.is_dead and not target_char.is_tapped and target_char.suit == Suit.HEARTS:
+        shield_values = {"J": 3, "Q": 5, "K": 10}
+        target_char.is_tapped = True
+        target_char.temporary_shield += shield_values.get(target_char.rank, 0)
+        state.character_tapped_this_turn = True
+        log_event(state, "DEFENSE_TAP", {
+            "defender_id": pa.target_player_id,
+            "char_index": pa.target_char_index,
+            "shield": shield_values.get(target_char.rank, 0),
+        })
+
+    # Restore subphase and resolve the attack
+    state.turn_subphase = pa.previous_subphase
+    _resolve_attack(state, pa.attacker_id, pa.target_player_id, pa.target_char_index, pa.damage)
+
+    # Save info before clearing
+    remaining = pa.remaining_tap_targets
+    source = pa.source
+    attacker_id = pa.attacker_id
+    state.pending_attack = None
+
+    if state.is_over:
+        return
+
+    # Process remaining clubs tap targets
+    if remaining and source == "tap":
+        for i, atk in enumerate(remaining):
+            tp = next(p for p in state.players if p.id == atk["player_id"])
+            tc_idx = atk["char_index"]
+            if tc_idx < len(tp.characters) and not tp.characters[tc_idx].is_dead:
+                paused = attack_heart(state, attacker_id, atk["player_id"], tc_idx, 10)
+                if paused:
+                    state.pending_attack.source = "tap"
+                    state.pending_attack.remaining_tap_targets = remaining[i + 1:]
+                    return  # Another reaction needed
+
+    # Post-resolution: end turn based on source action
+    if source == "strike":
+        end_turn(state)
+    elif source == "tap":
+        if state.turn_subphase not in ["SHOPPING", "SHOP_FREE_BUY", "GRAVEDIGGING"]:
+            end_turn(state)
+    elif source == "perform":
+        if state.turn_subphase not in ["SHOPPING", "SHOP_FREE_BUY", "SPADE_DIG"]:
+            end_turn(state)
 
 
 def end_turn(state: GameState):
@@ -1024,6 +1116,7 @@ def end_turn(state: GameState):
     state.active_character_index = None
     state.gravedig_pool = []
     state.free_buys_remaining = 0
+    state.pending_attack = None
 
     # Clear temporary shields and dug cards for all characters
     for char in player.characters:

@@ -1,0 +1,33 @@
+=== Scenario: clubs_on_top ===
+Description: All player stacks have clubs on top (attack-ready)
+Value estimate: -0.5917
+Valid actions: 51
+
+Top 10 actions:
+  [137] Perform char[2] top1 clubs->opp[1]             0.3822
+  [148] Perform char[2] top3 clubs->opp[0]             0.1391
+  [ 90] Perform char[1] top3 clubs->opp[2]             0.1284
+  [215] Tap char[0] clubs->opp[1]                      0.0540
+  [149] Perform char[2] top3 clubs->opp[1]             0.0496
+  [ 25] Perform char[0] top3 diamonds                  0.0419
+  [ 86] Perform char[1] top3 hearts                    0.0399
+  [144] Perform char[2] top2 clubs->opp[2]             0.0326
+  [146] Perform char[2] top3 hearts                    0.0228
+  [194] Strike char[0]->opp[0]+discard_all             0.0137
+
+Top 15 salient features:
+  hand0_clubs                                    saliency=0.74834  value=0.000
+  hand0_diamonds                                 saliency=0.62309  value=0.000
+  hand0_is_ace                                   saliency=0.59262  value=0.000
+  hand1_face_rank                                saliency=0.56913  value=0.000
+  own_char2_s6_exists                            saliency=0.55228  value=0.000
+  own_char2_s6_rank                              saliency=0.49053  value=0.000
+  strat_own_char1_top_hearts                     saliency=0.47520  value=0.000
+  opp_char1_s4_diamonds                          saliency=0.44185  value=0.000
+  own_char2_s6_hearts                            saliency=0.43682  value=0.000
+  strat_opp_char0_top_hearts                     saliency=0.42146  value=1.000
+  shop0_hearts                                   saliency=0.41731  value=0.000
+  own_char2_s5_clubs                             saliency=0.41722  value=0.000
+  hand1_spades                                   saliency=0.39843  value=0.000
+  shop2_face_rank                                saliency=0.39376  value=0.000
+  strat_opp_char1_top_hearts                     saliency=0.38589  value=1.000

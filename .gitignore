@@ -3,3 +3,6 @@
 *.pyc
 /shovels_backend/.env
 /logs/shovels_ppo
+/logs/phase1
+/logs/shovels_selfplay
+/models/checkpoints

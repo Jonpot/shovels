@@ -1,8 +1,9 @@
 """
-Evaluate a trained Shovels model against RandomAgent.
+Evaluate a trained Shovels model against RandomAgent or another model.
 
 Usage:
     python -m shovels_gym.evaluate --model models/shovels_ppo.zip --games 1000
+    python -m shovels_gym.evaluate --model models/shovels_selfplay.zip --opponent models/shovels_ppo.zip --games 1000
 """
 
 import argparse
@@ -18,10 +19,19 @@ from shovels_gym.playback import save_game_log
 
 
 def evaluate(model_path: str, n_games: int = 1000, verbose: bool = True,
-             log_dir: str = "logs/game_replays"):
-    """Evaluate model vs RandomAgent. Returns (win_rate, stats_dict)."""
+             log_dir: str = "logs/game_replays", opponent_path: str = None):
+    """Evaluate model vs RandomAgent or another model. Returns (win_rate, stats_dict)."""
     model = MaskablePPO.load(model_path)
-    env = ShovelsEnv()
+
+    opponent_agent = None
+    opponent_label = "RandomAgent"
+    if opponent_path:
+        from shovels_gym.self_play import PolicyAgent
+        opp_model = MaskablePPO.load(opponent_path)
+        opponent_agent = PolicyAgent(opp_model, deterministic=True)
+        opponent_label = os.path.basename(opponent_path)
+
+    env = ShovelsEnv(opponent_agent=opponent_agent)
 
     wins = 0
     losses = 0
@@ -94,11 +104,12 @@ def evaluate(model_path: str, n_games: int = 1000, verbose: bool = True,
         "avg_reward": total_reward / n_games,
         "avg_length": total_length / n_games,
         "reward_std": float(np.std(rewards_list)),
+        "opponent": opponent_label,
     }
 
     if verbose:
         print(f"\n{'=' * 50}")
-        print(f"Evaluation Results ({n_games} games)")
+        print(f"Evaluation Results ({n_games} games vs {opponent_label})")
         print(f"{'=' * 50}")
         print(f"Win rate:     {win_rate:.2%}")
         print(f"Wins:         {wins}")
@@ -145,10 +156,11 @@ def save_eval_plot(stats: dict, output_dir: str = "logs/training_plots"):
 def main():
     parser = argparse.ArgumentParser(description="Evaluate Shovels RL agent")
     parser.add_argument("--model", type=str, required=True, help="Path to model .zip file")
+    parser.add_argument("--opponent", type=str, default=None, help="Path to opponent model .zip (default: RandomAgent)")
     parser.add_argument("--games", type=int, default=1000, help="Number of evaluation games")
     args = parser.parse_args()
 
-    win_rate, stats = evaluate(args.model, args.games)
+    win_rate, stats = evaluate(args.model, args.games, opponent_path=args.opponent)
     save_eval_plot(stats)
 
 

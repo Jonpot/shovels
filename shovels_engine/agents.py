@@ -1,10 +1,10 @@
 import random
 from shovels_engine.models import GameState, Suit
 from shovels_engine.engine import (
-    draw_cards, discard_card, play_card, 
-    perform_action, apply_face_strike, 
+    draw_cards, discard_card, play_card,
+    perform_action, apply_face_strike,
     tap_hero_power, resolve_gravedig, buy_card,
-    end_turn
+    end_turn, resolve_defense_reaction,
 )
 
 class Agent:
@@ -15,7 +15,15 @@ class RandomAgent(Agent):
     def act(self, state: GameState, player_id: str):
         """Performs a random valid action based on the current subphase."""
         player = next(p for p in state.players if p.id == player_id)
-        
+
+        # Handle defense reaction (50% chance to tap)
+        if state.turn_subphase == "DEFENSE_REACTION" and state.pending_attack:
+            pa = state.pending_attack
+            if pa.target_player_id == player_id:
+                tap = random.random() < 0.5
+                resolve_defense_reaction(state, player_id, tap)
+                return
+
         try:
             if state.phase == 1:
                 if state.turn_subphase == "DRAW":

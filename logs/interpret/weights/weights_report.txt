@@ -1,0 +1,64 @@
+=== Weight Analysis Report ===
+
+Top 30 features by policy net first-layer |weight|:
+   1. hand0_clubs                               pi=0.2987  vf=0.0493
+   2. hand0_face_rank                           pi=0.2648  vf=0.0455
+   3. hand0_diamonds                            pi=0.2641  vf=0.0450
+   4. hand1_face_rank                           pi=0.2567  vf=0.0306
+   5. hand0_hearts                              pi=0.2404  vf=0.0556
+   6. hand0_spades                              pi=0.2052  vf=0.0444
+   7. hand1_hearts                              pi=0.2011  vf=0.0432
+   8. hand1_diamonds                            pi=0.1991  vf=0.0329
+   9. hand1_spades                              pi=0.1968  vf=0.0329
+  10. hand1_clubs                               pi=0.1933  vf=0.0374
+  11. hand0_is_ace                              pi=0.1870  vf=0.0323
+  12. can_discard_2nd_face                      pi=0.1832  vf=0.0439
+  13. hand0_rank                                pi=0.1669  vf=0.0428
+  14. hand1_rank                                pi=0.1614  vf=0.0315
+  15. strat_own_char1_top_spades                pi=0.1578  vf=0.0659
+  16. strat_own_char1_top_diamonds              pi=0.1533  vf=0.0567
+  17. own_char0_suit_clubs                      pi=0.1480  vf=0.1311
+  18. hand1_is_ace                              pi=0.1476  vf=0.0279
+  19. own_char2_suit_clubs                      pi=0.1385  vf=0.1242
+  20. strat_opp_char0_top_clubs                 pi=0.1385  vf=0.0541
+  21. strat_opp_char0_top_diamonds              pi=0.1380  vf=0.0593
+  22. own_char1_suit_clubs                      pi=0.1379  vf=0.1272
+  23. strat_opp_char0_top_hearts                pi=0.1364  vf=0.0604
+  24. strat_opp_char2_top_diamonds              pi=0.1353  vf=0.0557
+  25. strat_opp_char1_top_hearts                pi=0.1346  vf=0.0596
+  26. strat_opp_char1_top_clubs                 pi=0.1337  vf=0.0481
+  27. own_char2_s5_clubs                        pi=0.1328  vf=0.0804
+  28. strat_opp_char2_top_hearts                pi=0.1322  vf=0.0551
+  29. opp_char1_s5_spades                       pi=0.1275  vf=0.1041
+  30. strat_own_char2_top_clubs                 pi=0.1259  vf=0.0551
+
+Feature group importance (policy net):
+  hand                       0.1964
+  strat_own_char_1           0.1020
+  strat_opp_char_0           0.0979
+  strat_opp_char_1           0.0967
+  strat_opp_char_2           0.0956
+  strat_own_char_2           0.0947
+  strat_own_char_0           0.0930
+  shop                       0.0903
+  own_char_1                 0.0884
+  own_char_2                 0.0877
+  opp_char_1                 0.0876
+  own_char_0                 0.0875
+  opp_char_0                 0.0858
+  opp_char_2                 0.0856
+  game_meta                  0.0855
+  cross_player               0.0681
+  gravedig_pool              0.0656
+  dug_cards                  0.0552
+
+Supergroup importance (policy net):
+  hand                  0.1964
+  opp_strategy          0.0967
+  own_strategy          0.0966
+  shop                  0.0903
+  own_characters        0.0878
+  opp_characters        0.0863
+  game_state            0.0855
+  cross_player          0.0681
+  dig_zone              0.0604

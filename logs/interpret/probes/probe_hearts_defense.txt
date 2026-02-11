@@ -1,0 +1,33 @@
+=== Scenario: hearts_defense ===
+Description: Player has strong hearts on top; opponent has clubs-heavy stacks
+Value estimate: -0.1702
+Valid actions: 44
+
+Top 10 actions:
+  [198] Strike char[0]->opp[2]+discard_all             0.4390
+  [142] Perform char[2] top2 clubs->opp[0]             0.1551
+  [ 24] Perform char[0] top2 clubs->opp[2]             0.1374
+  [144] Perform char[2] top2 clubs->opp[2]             0.0868
+  [ 90] Perform char[1] top3 clubs->opp[2]             0.0353
+  [212] Tap char[1] (non-clubs)                        0.0329
+  [ 89] Perform char[1] top3 clubs->opp[1]             0.0229
+  [ 82] Perform char[1] top2 clubs->opp[0]             0.0191
+  [150] Perform char[2] top3 clubs->opp[2]             0.0099
+  [194] Strike char[0]->opp[0]+discard_all             0.0078
+
+Top 15 salient features:
+  hand0_clubs                                    saliency=2.52546  value=0.000
+  hand0_spades                                   saliency=1.05143  value=0.000
+  hand0_diamonds                                 saliency=1.01306  value=0.000
+  own_char0_suit_clubs                           saliency=0.92003  value=1.000
+  own_char1_s4_is_ace                            saliency=0.74248  value=0.000
+  opp_char1_is_dead                              saliency=0.71516  value=0.000
+  opp_char1_s6_is_ace                            saliency=0.70843  value=0.000
+  own_char0_s7_clubs                             saliency=0.70502  value=0.000
+  own_char1_s7_rank                              saliency=0.67970  value=0.000
+  own_char1_s7_exists                            saliency=0.66099  value=0.000
+  can_discard_2nd_face                           saliency=0.66064  value=0.000
+  own_char1_s6_hearts                            saliency=0.65119  value=0.000
+  own_char1_s7_hearts                            saliency=0.65057  value=0.000
+  own_char0_suit_hearts                          saliency=0.63838  value=0.000
+  strat_own_char1_top_spades                     saliency=0.63418  value=0.000
