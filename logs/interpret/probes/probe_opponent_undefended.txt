@@ -1,33 +1,33 @@
 === Scenario: opponent_undefended ===
 Description: Opponent has zero hearts on any character
-Value estimate: 0.3394
+Value estimate: 0.6911
 Valid actions: 41
 
 Top 10 actions:
-  [ 16] Perform char[0] top1 clubs->opp[0]             0.9969
-  [216] Tap char[0] clubs->opp[2]                      0.0025
-  [137] Perform char[2] top1 clubs->opp[1]             0.0003
-  [206] Strike char[2]->opp[0]+discard_all             0.0001
-  [198] Strike char[0]->opp[2]+discard_all             0.0000
-  [136] Perform char[2] top1 clubs->opp[0]             0.0000
-  [ 24] Perform char[0] top2 clubs->opp[2]             0.0000
-  [142] Perform char[2] top2 clubs->opp[0]             0.0000
-  [150] Perform char[2] top3 clubs->opp[2]             0.0000
-  [146] Perform char[2] top3 hearts                    0.0000
+  [214] Tap char[0] clubs->opp[0]                      0.9965
+  [215] Tap char[0] clubs->opp[1]                      0.0024
+  [ 16] Perform char[0] top1 clubs->opp[0]             0.0005
+  [136] Perform char[2] top1 clubs->opp[0]             0.0005
+  [ 29] Perform char[0] top3 clubs->opp[1]             0.0001
+  [208] Strike char[2]->opp[1]+discard_all             0.0000
+  [148] Perform char[2] top3 clubs->opp[0]             0.0000
+  [202] Strike char[1]->opp[1]+discard_all             0.0000
+  [ 73] Perform char[1] top1 diamonds                  0.0000
+  [147] Perform char[2] top3 spades                    0.0000
 
 Top 15 salient features:
-  hand0_clubs                                    saliency=0.02529  value=0.000
-  hand0_hearts                                   saliency=0.01520  value=0.000
-  hand0_diamonds                                 saliency=0.01275  value=0.000
-  strat_opp_char0_top_hearts                     saliency=0.01005  value=0.000
-  opp_char0_s5_hearts                            saliency=0.00749  value=0.000
-  can_discard_2nd_face                           saliency=0.00723  value=0.000
-  strat_opp_char0_top_heart_depth                saliency=0.00688  value=1.000
-  shop0_spades                                   saliency=0.00680  value=0.000
-  strat_opp_char0_top_heart_rank                 saliency=0.00660  value=0.000
-  own_char0_s6_hearts                            saliency=0.00655  value=0.000
-  opp_char2_s2_spades                            saliency=0.00648  value=0.000
-  own_char1_is_tapped                            saliency=0.00645  value=0.000
-  own_char0_s5_spades                            saliency=0.00618  value=0.000
-  opp_char1_s9_hearts                            saliency=0.00614  value=0.000
-  own_char0_s4_is_ace                            saliency=0.00607  value=0.000
+  strat_opp_char0_top_spades                     saliency=0.01166  value=1.000
+  opp_char2_rank_K                               saliency=0.01045  value=1.000
+  own_char1_s0_hearts                            saliency=0.01007  value=1.000
+  strat_own_char0_top_clubs                      saliency=0.00991  value=1.000
+  strat_own_char1_top_diamonds                   saliency=0.00938  value=1.000
+  opp_char1_suit_clubs                           saliency=0.00932  value=1.000
+  own_char2_s1_spades                            saliency=0.00914  value=1.000
+  opp_char1_s2_exists                            saliency=0.00900  value=1.000
+  opp_char1_s2_rank                              saliency=0.00713  value=0.900
+  opp_char1_s2_clubs                             saliency=0.00711  value=1.000
+  opp_char2_s1_spades                            saliency=0.00680  value=1.000
+  own_char1_s1_exists                            saliency=0.00677  value=1.000
+  own_char0_suit_clubs                           saliency=0.00623  value=1.000
+  own_char0_s0_hearts                            saliency=0.00621  value=1.000
+  subphase_battle_action                         saliency=0.00570  value=1.000

@@ -1,33 +1,33 @@
 === Scenario: moonshot_stack ===
 Description: Moonshot: char 0 has 10-card stack, others minimal
-Value estimate: -0.6928
+Value estimate: 0.1111
 Valid actions: 62
 
 Top 10 actions:
-  [ 40] Perform char[0] top5 clubs->opp[0]             0.6553
-  [ 56] Perform char[0] top8 hearts                    0.1263
-  [ 37] Perform char[0] top5 diamonds                  0.0628
-  [ 59] Perform char[0] top8 clubs->opp[1]             0.0390
-  [ 38] Perform char[0] top5 hearts                    0.0249
-  [ 50] Perform char[0] top7 hearts                    0.0188
-  [ 30] Perform char[0] top3 clubs->opp[2]             0.0171
-  [ 24] Perform char[0] top2 clubs->opp[2]             0.0155
-  [ 58] Perform char[0] top8 clubs->opp[0]             0.0144
-  [ 26] Perform char[0] top3 hearts                    0.0052
+  [ 71] Perform char[0] top10 clubs->opp[1]            0.4223
+  [ 72] Perform char[0] top10 clubs->opp[2]            0.4087
+  [ 62] Perform char[0] top9 hearts                    0.0955
+  [ 23] Perform char[0] top2 clubs->opp[1]             0.0372
+  [ 58] Perform char[0] top8 clubs->opp[0]             0.0129
+  [ 64] Perform char[0] top9 clubs->opp[0]             0.0105
+  [215] Tap char[0] clubs->opp[1]                      0.0048
+  [ 46] Perform char[0] top6 clubs->opp[0]             0.0042
+  [ 60] Perform char[0] top8 clubs->opp[2]             0.0021
+  [ 34] Perform char[0] top4 clubs->opp[0]             0.0006
 
 Top 15 salient features:
-  own_char0_suit_clubs                           saliency=0.60816  value=1.000
-  hand0_clubs                                    saliency=0.55645  value=0.000
-  opp_char1_s5_spades                            saliency=0.51105  value=0.000
-  own_char1_s7_exists                            saliency=0.42266  value=0.000
-  strat_own_char0_top_heart_depth                saliency=0.36933  value=0.200
-  can_discard_2nd_face                           saliency=0.36889  value=0.000
-  hand0_hearts                                   saliency=0.36214  value=0.000
-  own_char0_suit_hearts                          saliency=0.35496  value=0.000
-  own_char1_s7_rank                              saliency=0.35192  value=0.000
-  strat_own_char0_hearts_sum                     saliency=0.34870  value=0.420
-  own_char1_suit_clubs                           saliency=0.34698  value=0.000
-  cross_own_weakest_heart                        saliency=0.31872  value=0.000
-  strat_own_char1_top_spades                     saliency=0.31634  value=0.000
-  strat_opp_char1_hearts_sum                     saliency=0.31634  value=0.080
-  opp_char1_suit_clubs                           saliency=0.30828  value=1.000
+  strat_own_char2_top_heart_depth                saliency=0.11031  value=1.000
+  strat_own_char2_top_spades                     saliency=0.08674  value=1.000
+  own_char0_s7_hearts                            saliency=0.08176  value=1.000
+  own_char2_rank_J                               saliency=0.07405  value=1.000
+  own_char2_suit_spades                          saliency=0.07371  value=1.000
+  phase                                          saliency=0.06600  value=1.000
+  own_char0_s5_rank                              saliency=0.06458  value=0.800
+  strat_own_char1_top_hearts                     saliency=0.06377  value=1.000
+  subphase_battle_action                         saliency=0.06282  value=1.000
+  own_char0_s9_exists                            saliency=0.06181  value=1.000
+  own_char0_s9_rank                              saliency=0.05946  value=0.900
+  own_char0_s5_exists                            saliency=0.05407  value=1.000
+  own_char0_suit_clubs                           saliency=0.05026  value=1.000
+  opp_char0_s2_exists                            saliency=0.04862  value=1.000
+  strat_own_char0_top_diamonds                   saliency=0.04419  value=1.000

@@ -1,33 +1,33 @@
 === Scenario: late_losing ===
 Description: Losing: 1 alive vs 3
-Value estimate: -1.1682
+Value estimate: -0.1798
 Valid actions: 17
 
 Top 10 actions:
-  [ 30] Perform char[0] top3 clubs->opp[2]             0.6104
-  [ 26] Perform char[0] top3 hearts                    0.2566
-  [ 17] Perform char[0] top1 clubs->opp[1]             0.0546
-  [215] Tap char[0] clubs->opp[1]                      0.0328
-  [216] Tap char[0] clubs->opp[2]                      0.0192
-  [194] Strike char[0]->opp[0]+discard_all             0.0094
-  [196] Strike char[0]->opp[1]+discard_all             0.0051
-  [ 24] Perform char[0] top2 clubs->opp[2]             0.0040
-  [ 22] Perform char[0] top2 clubs->opp[0]             0.0029
-  [ 23] Perform char[0] top2 clubs->opp[1]             0.0028
+  [ 23] Perform char[0] top2 clubs->opp[1]             0.9818
+  [ 24] Perform char[0] top2 clubs->opp[2]             0.0104
+  [215] Tap char[0] clubs->opp[1]                      0.0053
+  [216] Tap char[0] clubs->opp[2]                      0.0019
+  [ 26] Perform char[0] top3 hearts                    0.0003
+  [ 22] Perform char[0] top2 clubs->opp[0]             0.0002
+  [ 28] Perform char[0] top3 clubs->opp[0]             0.0000
+  [198] Strike char[0]->opp[2]+discard_all             0.0000
+  [ 17] Perform char[0] top1 clubs->opp[1]             0.0000
+  [196] Strike char[0]->opp[1]+discard_all             0.0000
 
 Top 15 salient features:
-  hand0_hearts                                   saliency=0.49136  value=0.000
-  hand1_diamonds                                 saliency=0.29171  value=0.000
-  hand1_face_rank                                saliency=0.27603  value=0.000
-  shop0_spades                                   saliency=0.25243  value=0.000
-  hand0_clubs                                    saliency=0.24045  value=0.000
-  subphase_battle_action                         saliency=0.20299  value=1.000
-  strat_own_char2_top_hearts                     saliency=0.20253  value=0.000
-  gpool4_exists                                  saliency=0.19272  value=0.000
-  own_char1_s8_spades                            saliency=0.18827  value=0.000
-  shop0_clubs                                    saliency=0.17828  value=0.000
-  opp_char1_s2_is_ace                            saliency=0.17773  value=0.000
-  opp_char1_s6_hearts                            saliency=0.17505  value=0.000
-  gpool4_rank                                    saliency=0.17267  value=0.000
-  strat_opp_char1_top_diamonds                   saliency=0.16721  value=0.000
-  opp_char2_is_tapped                            saliency=0.16664  value=0.000
+  own_char1_suit_diamonds                        saliency=0.01304  value=1.000
+  opp_char2_rank_K                               saliency=0.00785  value=1.000
+  opp_char0_suit_hearts                          saliency=0.00746  value=1.000
+  own_char2_rank_J                               saliency=0.00734  value=1.000
+  opp_char1_s0_hearts                            saliency=0.00716  value=1.000
+  opp_char2_suit_diamonds                        saliency=0.00705  value=1.000
+  opp_char0_s2_clubs                             saliency=0.00614  value=1.000
+  opp_char2_s2_clubs                             saliency=0.00606  value=1.000
+  subphase_battle_action                         saliency=0.00594  value=1.000
+  own_char1_rank_Q                               saliency=0.00593  value=1.000
+  own_char0_rank_K                               saliency=0.00577  value=1.000
+  own_char1_is_dead                              saliency=0.00467  value=1.000
+  opp_char2_s1_exists                            saliency=0.00467  value=1.000
+  strat_opp_char0_top_clubs                      saliency=0.00463  value=1.000
+  cross_own_weakest_heart                        saliency=0.00448  value=0.500
